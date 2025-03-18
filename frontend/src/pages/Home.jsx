@@ -25,6 +25,7 @@ console.log(GiIcons); // This will log all available icons in the console
 
 import { HiOutlineDocumentReport } from 'react-icons/hi';
 import { motion } from 'framer-motion';
+import { Link } from "react-router-dom";
 
 // Placeholder images - replace with actual assets
 const heroBackgroundImage = "https://via.placeholder.com/600x400";
@@ -165,6 +166,7 @@ export default function Home() {
                 <span className="text-lg font-medium">{t.scanButton}</span>
               </Button>
               
+              <Link to ="/appointment">
               <Button 
                 size="xl" 
                 className="h-36 flex flex-col items-center justify-center bg-yellow-500 hover:bg-yellow-600 transition-all duration-300 rounded-xl shadow-lg"
@@ -172,6 +174,7 @@ export default function Home() {
                 <FaCalendarAlt className="text-4xl mb-3" />
                 <span className="text-lg font-medium">{t.bookButton}</span>
               </Button>
+              </Link>
               
               <Button 
                 size="xl" 

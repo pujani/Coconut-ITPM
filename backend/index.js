@@ -32,7 +32,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Routes
-const clientRouter = require('./routes/client.route.js');
+// In index.js
+const reportRouter = require('./routes/report.route');
 const appointmentRouter = require('./routes/appointments.route.js');
 const authRouter = require('./routes/auth.route.js');
 
@@ -40,8 +41,7 @@ app.get('/', (req, res) => {
     res.send('Backend is running!');
 });
 
-
-app.use('/api/client', clientRouter);
+app.use('/api/reports', reportRouter);
 app.use('/api/appointment', appointmentRouter);
 app.use('/api/auth', authRouter);
 

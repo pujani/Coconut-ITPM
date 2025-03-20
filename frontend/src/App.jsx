@@ -4,13 +4,14 @@ import Footer from "./components/Footer";
 import Dashboard from "./pages/Dashboard";
 import Restaurants from "./pages/Home";
 import Appointment from "./pages/Appointment";
-import CreateClient from "./pages/CreateClient";
+import CreateClient from "./pages/CreateReport";
 import Signup from "./pages/Singup";
 import Signin from "./pages/Signin";
 import Profile from "./pages/Profile";
 import UpdateClient from "./pages/UpdateClient";
 import HeaderAdmin from "./components/HeaderAdmin";
 import PrivateRoute from "./components/PrivateRoute";
+import { unstable_HistoryRouter as HistoryRouter } from 'react-router-dom';
 
 function Layout() {
   const location = useLocation();

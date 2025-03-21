@@ -13,6 +13,7 @@ import HeaderAdmin from "./components/HeaderAdmin";
 import PrivateRoute from "./components/PrivateRoute";
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './components/ErrorFallback';
+import CreateReport from "./pages/CreateReport";
 
 function Layout() {
   const location = useLocation();
@@ -32,6 +33,7 @@ function Layout() {
           <Route path="/client" element={<CreateClient />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/createReport" element={<CreateReport />} />
           <Route path="/update-client/:id" element={<UpdateClient />} />
         </Route>
       </Routes>

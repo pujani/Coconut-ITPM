@@ -1,43 +1,85 @@
 import React, { useState, useEffect } from 'react';
-import { Button, TextInput, Select, Alert } from 'flowbite-react';
+import { Button, TextInput, Select, Label, Card, Spinner, Table } from 'flowbite-react';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
+import { HiOutlineLocationMarker, HiOutlineDocumentText } from 'react-icons/hi';
+
+// Static Sri Lankan location data
+const PROVINCES = [
+  'Central Province', 
+  'Eastern Province',
+  'Northern Province',
+  'Southern Province',
+  'Western Province',
+  'North Western Province',
+  'North Central Province',
+  'Uva Province',
+  'Sabaragamuwa Province'
+];
+
+const DISTRICTS_BY_PROVINCE = {
+  'Central Province': ['Kandy', 'Matale', 'Nuwara Eliya'],
+  'Eastern Province': ['Ampara', 'Batticaloa', 'Trincomalee'],
+  'Northern Province': ['Jaffna', 'Kilinochchi', 'Mannar', 'Mullaitivu', 'Vavuniya'],
+  'Southern Province': ['Galle', 'Hambantota', 'Matara'],
+  'Western Province': ['Colombo', 'Gampaha', 'Kalutara'],
+  'North Western Province': ['Kurunegala', 'Puttalam'],
+  'North Central Province': ['Anuradhapura', 'Polonnaruwa'],
+  'Uva Province': ['Badulla', 'Monaragala'],
+  'Sabaragamuwa Province': ['Kegalle', 'Ratnapura']
+};
 
 const CreateReport = () => {
   const [formData, setFormData] = useState({
+    reportName: 'Identification and reporting of trees with coconut leaf rot and Weligama coconut leaf wilt diseases',
+    uniqueId: '',
     fullName: '',
     province: '',
     district: '',
     regionalDivision: '',
     gramaNiladari: '',
     addressLine1: '',
+    addressLine2: '',
     landExtent: { value: 0, unit: 'Acres' },
     numberOfPlants: 0,
     trees: []
   });
 
-  const [provinces, setProvinces] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [regionalDivisions, setRegionalDivisions] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
 
+  // Auto-generate unique ID on component mount
   useEffect(() => {
-    // Load location data
-    axios.get('/api/locations/provinces').then(res => setProvinces(res.data));
+    const generateUniqueId = () => {
+      const randomDigits = Math.floor(100000 + Math.random() * 900000); // 6-digit random number
+      return `WD${randomDigits}`;
+    };
+    setFormData(prev => ({ ...prev, uniqueId: generateUniqueId() }));
   }, []);
 
-  const handleLocationChange = async (type, value) => {
+  // Auto-fill address line 2 when location fields change
+  useEffect(() => {
+    const { gramaNiladari, regionalDivision, district, province } = formData;
+    const addressLine2 = `${gramaNiladari}, ${regionalDivision}, ${district}, ${province}`;
+    setFormData(prev => ({ ...prev, addressLine2 }));
+  }, [formData.gramaNiladari, formData.regionalDivision, formData.district, formData.province]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLocationChange = (type, value) => {
     const updates = { [type]: value };
+    
     if (type === 'province') {
-      const { data } = await axios.get(`/api/locations/districts?province=${value}`);
-      setDistricts(data);
       updates.district = '';
       updates.regionalDivision = '';
     }
+    
     if (type === 'district') {
-      const { data } = await axios.get(`/api/locations/regional-divisions?district=${value}`);
-      setRegionalDivisions(data);
       updates.regionalDivision = '';
     }
+
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
@@ -60,73 +102,282 @@ const CreateReport = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       await axios.post('/api/reports', formData);
       toast.success('Report submitted successfully!');
+      setFormData({
+        reportName: 'Identification and reporting of trees with coconut leaf rot and Weligama coconut leaf wilt diseases',
+        uniqueId: '',
+        fullName: '',
+        province: '',
+        district: '',
+        regionalDivision: '',
+        gramaNiladari: '',
+        addressLine1: '',
+        addressLine2: '',
+        landExtent: { value: 0, unit: 'Acres' },
+        numberOfPlants: 0,
+        trees: []
+      });
     } catch (error) {
       toast.error('Error submitting report');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="p-3 max-w-4xl mx-auto">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Location Selectors */}
-        <Select onChange={(e) => handleLocationChange('province', e.target.value)}>
-          <option>Select Province</option>
-          {provinces.map(p => <option key={p}>{p}</option>)}
-        </Select>
+    <div className="p-4 max-w-6xl mx-auto">
+      <Card className="mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <HiOutlineDocumentText className="text-blue-500" />
+          {formData.reportName}
+        </h1>
+      </Card>
 
-        <Select 
-          disabled={!formData.province}
-          onChange={(e) => handleLocationChange('district', e.target.value)}
-        >
-          <option>Select District</option>
-          {districts.map(d => <option key={d}>{d}</option>)}
-        </Select>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        {/* Report Details Section */}
+        <Card>
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Report Details</h2>
 
-        {/* Tree Input Table */}
-        <TextInput
-          type="number"
-          placeholder="Number of Plants"
-          onChange={(e) => generateTreeTable(Number(e.target.value))}
-        />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="uniqueId" value="Unique ID" />
+                <TextInput
+                  id="uniqueId"
+                  value={formData.uniqueId}
+                  readOnly
+                />
+              </div>
 
-        {formData.trees.map((tree, index) => (
-          <div key={index} className="border p-2">
-            <span>Tree #{index + 1}</span>
-            <Select
-              value={tree.age}
-              onChange={(e) => handleTreeChange(index, 'age', Number(e.target.value))}
-            >
-              <option value="">Select Age</option>
-              <option value={1}>Over 2 years</option>
-              <option value={2}>Under 2 years</option>
-            </Select>
-
-            <div className="flex gap-2">
-              {[1, 2, 3].map(symptom => (
-                <label key={symptom}>
-                  <input
-                    type="checkbox"
-                    checked={tree.symptoms.includes(symptom)}
-                    onChange={(e) => {
-                      const symptoms = e.target.checked
-                        ? [...tree.symptoms, symptom]
-                        : tree.symptoms.filter(s => s !== symptom);
-                      handleTreeChange(index, 'symptoms', symptoms);
-                    }}
-                  />
-                  Symptom {symptom}
-                </label>
-              ))}
+              <div>
+                <Label htmlFor="fullName" value="Full Name" />
+                <TextInput
+                  id="fullName"
+                  name="fullName" // Ensure this matches the key in formData
+                  placeholder="Enter your full name"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
           </div>
-        ))}
+        </Card>
 
-        <Button type="submit">Submit Report</Button>
+        {/* Location Section */}
+        <Card>
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <HiOutlineLocationMarker className="text-blue-500" />
+              Location Details
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="province" value="Province" />
+                <Select
+                  id="province"
+                  value={formData.province}
+                  onChange={(e) => handleLocationChange('province', e.target.value)}
+                  required
+                >
+                  <option value="">Select Province</option>
+                  {PROVINCES.map(province => (
+                    <option key={province} value={province}>{province}</option>
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="district" value="District" />
+                <Select
+                  id="district"
+                  value={formData.district}
+                  onChange={(e) => handleLocationChange('district', e.target.value)}
+                  disabled={!formData.province}
+                  required
+                >
+                  <option value="">Select District</option>
+                  {(DISTRICTS_BY_PROVINCE[formData.province] || []).map(district => (
+                    <option key={district} value={district}>{district}</option>
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="regionalDivision" value="Regional Division" />
+                <TextInput
+                  id="regionalDivision"
+                  name="regionalDivision"
+                  placeholder="Enter Regional Division"
+                  value={formData.regionalDivision}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="gramaNiladari" value="Grama Niladari Division" />
+                <TextInput
+                  id="gramaNiladari"
+                  name="gramaNiladari"
+                  placeholder="Enter Grama Niladari Division"
+                  value={formData.gramaNiladari}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="addressLine1" value="Address Line 01" />
+                <TextInput
+                  id="addressLine1"
+                  name="addressLine1"
+                  placeholder="Enter Address Line 01"
+                  value={formData.addressLine1}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="addressLine2" value="Address Line 02" />
+                <TextInput
+                  id="addressLine2"
+                  value={formData.addressLine2}
+                  readOnly
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Land & Tree Details Section */}
+        <Card>
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Land & Tree Details</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="landExtent" value="Extent of the Land" />
+                <div className="flex gap-2">
+                  <TextInput
+                    id="landExtent"
+                    type="number"
+                    placeholder="Enter land extent"
+                    value={formData.landExtent.value}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      landExtent: { ...prev.landExtent, value: e.target.value }
+                    }))}
+                    required
+                  />
+                  <Select
+                    value={formData.landExtent.unit}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      landExtent: { ...prev.landExtent, unit: e.target.value }
+                    }))}
+                  >
+                    <option value="Acres">Acres</option>
+                    <option value="Roods">Roods</option>
+                    <option value="Perches">Perches</option>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="numberOfPlants" value="Number of Coconut Plants" />
+                <TextInput
+                  id="numberOfPlants"
+                  type="number"
+                  placeholder="Enter number of plants"
+                  value={formData.numberOfPlants}
+                  onChange={(e) => generateTreeTable(Number(e.target.value))}
+                  required
+                />
+              </div>
+            </div>
+
+            {formData.trees.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="font-medium">Tree Health Data Entry</h3>
+                <Table hoverable>
+                  <Table.Head>
+                    <Table.HeadCell>Tree Number</Table.HeadCell>
+                    <Table.HeadCell>Tree Age</Table.HeadCell>
+                    <Table.HeadCell>Symptoms</Table.HeadCell>
+                  </Table.Head>
+                  <Table.Body>
+                    {formData.trees.map((tree, index) => (
+                      <Table.Row key={index}>
+                        <Table.Cell>Tree #{tree.treeNumber}</Table.Cell>
+                        <Table.Cell>
+                          <Select
+                            value={tree.age || ''}
+                            onChange={(e) => handleTreeChange(index, 'age', Number(e.target.value))}
+                            required
+                          >
+                            <option value="">Select Age</option>
+                            <option value={1}>Over 2 years</option>
+                            <option value={2}>Under 2 years</option>
+                          </Select>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <div className="flex flex-col gap-2">
+                            <label className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={tree.symptoms.includes(1)}
+                                onChange={(e) => {
+                                  const symptoms = e.target.checked
+                                    ? [...tree.symptoms, 1]
+                                    : tree.symptoms.filter(s => s !== 1);
+                                  handleTreeChange(index, 'symptoms', symptoms);
+                                }}
+                              />
+                              <span>Coconut leaves flattening and turning yellow-orange</span>
+                            </label>
+                            <label className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={tree.symptoms.includes(2)}
+                                onChange={(e) => {
+                                  const symptoms = e.target.checked
+                                    ? [...tree.symptoms, 2]
+                                    : tree.symptoms.filter(s => s !== 2);
+                                  handleTreeChange(index, 'symptoms', symptoms);
+                                }}
+                              />
+                              <span>Rotting branches, blackened leaves, falling rotten parts</span>
+                            </label>
+                          </div>
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Button type="submit" disabled={submitting} className="mt-4">
+          {submitting ? (
+            <>
+              <Spinner size="sm" />
+              <span className="pl-3">Submitting...</span>
+            </>
+          ) : (
+            'Submit Report'
+          )}
+        </Button>
       </form>
-      <ToastContainer />
+
+      <ToastContainer position="bottom-right" />
     </div>
   );
 };

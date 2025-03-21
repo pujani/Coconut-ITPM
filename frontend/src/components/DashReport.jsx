@@ -318,7 +318,7 @@ export default function DashReport() {
       {/* Actions Bar */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div className="flex items-center gap-2">
-          <Link to="/create-report">
+          <Link to="/createReport">
             <Button gradientMonochrome="info">
               <IoIosAddCircleOutline className="mr-2 text-lg" />
               New Report

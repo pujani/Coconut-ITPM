@@ -1,9 +1,9 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
-const bodyParser = require('body-parser');
+import express from 'express';
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import bodyParser from 'body-parser';
 
 // Load environment variables
 dotenv.config();
@@ -32,10 +32,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Routes
-// In index.js
-const reportRouter = require('./routes/report.route');
-const appointmentRouter = require('./routes/appointments.route.js');
-const authRouter = require('./routes/auth.route.js');
+import reportRouter from './routes/report.route.js'; // Use ES Modules import
+import appointmentRouter from './routes/appointments.route.js'; // Use ES Modules import
+import authRouter from './routes/auth.route.js'; // Use ES Modules import
+import locationRouter from './routes/location.route.js'; // Use ES Modules import
 
 app.get('/', (req, res) => {
     res.send('Backend is running!');
@@ -44,6 +44,7 @@ app.get('/', (req, res) => {
 app.use('/api/reports', reportRouter);
 app.use('/api/appointment', appointmentRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/location', locationRouter);
 
 // Global Error Handling Middleware
 app.use((err, req, res, next) => {
@@ -55,6 +56,11 @@ app.use((err, req, res, next) => {
         message
     });
 });
+
+console.log('Report Router:', reportRouter);
+console.log('Location Router:', locationRouter);
+console.log('Auth Router:', authRouter);
+console.log('Appointment Router:', appointmentRouter);
 
 // Start the Server
 const PORT = process.env.PORT || 5005;

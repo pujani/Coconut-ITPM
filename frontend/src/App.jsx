@@ -11,7 +11,8 @@ import Profile from "./pages/Profile";
 import UpdateClient from "./pages/UpdateClient";
 import HeaderAdmin from "./components/HeaderAdmin";
 import PrivateRoute from "./components/PrivateRoute";
-import { unstable_HistoryRouter as HistoryRouter } from 'react-router-dom';
+import { ErrorBoundary } from 'react-error-boundary';
+import ErrorFallback from './components/ErrorFallback';
 
 function Layout() {
   const location = useLocation();
@@ -42,8 +43,13 @@ function Layout() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Layout />
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ErrorBoundary
+        FallbackComponent={ErrorFallback}
+        onReset={() => window.location.reload()}
+      >
+        <Layout />
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

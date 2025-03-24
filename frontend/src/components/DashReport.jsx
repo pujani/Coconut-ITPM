@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { 
-  Card, 
-  Table, 
-  Button, 
-  TextInput, 
-  Select, 
-  Badge, 
+import {
+  Card,
+  Table,
+  Button,
+  TextInput,
+  Select,
+  Badge,
   Spinner,
-  Modal 
+  Modal
 } from "flowbite-react";
-import { 
-  HiDocumentReport, 
+import {
+  HiDocumentReport,
   HiOutlineExclamationCircle,
   HiTrash
 } from "react-icons/hi";
@@ -25,7 +25,7 @@ import { toast } from "react-toastify";
 
 // Static Sri Lankan provinces and districts
 const PROVINCES = [
-  'Central Province', 
+  'Central Province',
   'Eastern Province',
   'Northern Province',
   'Southern Province',
@@ -59,7 +59,7 @@ export default function DashReport() {
     province: "",
     district: "",
     regionalDivision: "",
-    timeRange: "all"  
+    timeRange: "all"
   });
 
   const [stats, setStats] = useState({
@@ -75,38 +75,42 @@ export default function DashReport() {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const params = {
+      let params = {
         search: filters.search,
         province: filters.province,
         district: filters.district,
         regionalDivision: filters.regionalDivision,
-        timeRange: filters.timeRange
       };
-      
-    // Add stats request
-    const [reportsRes, statsRes] = await Promise.all([
-      axios.get("/api/reports", { params }),
-      axios.get("/api/reports/stats", { params })
-    ]);
-    
-    setReports(reportsRes.data);
-    setStats({
-      totalInspected: statsRes.data.totalInspected,
-      totalAffected: statsRes.data.totalAffected,
-      affectedPercentage: statsRes.data.percentage
-    });
-    }catch (err) {
+
+      const dateRange = getDateRange();
+      if (dateRange.start && dateRange.end) {
+        params.startDate = dateRange.start.toISOString();
+        params.endDate = dateRange.end.toISOString();
+      }
+
+      const [reportsRes, statsRes] = await Promise.all([
+        axios.get("/api/reports", { params }),
+        axios.get("/api/reports/stats", { params })
+      ]);
+
+      setReports(reportsRes.data);
+      setStats({
+        totalInspected: statsRes.data.totalInspected,
+        totalAffected: statsRes.data.totalAffected,
+        affectedPercentage: statsRes.data.percentage
+      });
+    } catch (err) {
       setError(err.message);
       toast.error("Failed to load reports");
-    }finally {
+    } finally {
       setLoading(false);
     }
   };
 
   const calculateStatistics = (reports = []) => {
     if (!Array.isArray(reports) || reports.length === 0) {
-        setStats({ totalInspected: 0, totalAffected: 0, affectedPercentage: 0 });
-        return;
+      setStats({ totalInspected: 0, totalAffected: 0, affectedPercentage: 0 });
+      return;
     }
 
     const totalInspected = reports.reduce((acc, report) => acc + (report.numberOfPlants || 0), 0);
@@ -114,22 +118,21 @@ export default function DashReport() {
     const percentage = totalInspected > 0 ? ((totalAffected / totalInspected) * 100).toFixed(2) : 0;
 
     setStats({
-        totalInspected,
-        totalAffected,
-        affectedPercentage: percentage
+      totalInspected,
+      totalAffected,
+      affectedPercentage: percentage
     });
   };
-
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     const newFilters = { ...filters, [name]: value };
-    
+
     if (name === "province") {
       newFilters.district = "";
       newFilters.regionalDivision = "";
     }
-    
+
     if (name === "district") {
       newFilters.regionalDivision = "";
     }
@@ -154,32 +157,39 @@ export default function DashReport() {
 
   const getDateRange = () => {
     const today = new Date();
-    switch(filters.timeRange) {
+    today.setHours(0, 0, 0, 0);  // set time to the beginning of the day
+
+    switch (filters.timeRange) {
       case 'today':
-        return { 
-          start: new Date(today.setHours(0,0,0,0)), 
-          end: new Date(today.setHours(23,59,59,999))
+        return {
+          start: today,
+          end: new Date(today.getTime() + 86400000 - 1)  // end of the day
         };
       case 'week':
         const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+        const endOfWeek = new Date(startOfWeek.getTime() + 6 * 86400000);
         return {
           start: startOfWeek,
-          end: new Date(startOfWeek.getTime() + 6 * 86400000)
+          end: new Date(endOfWeek.getTime() + 86400000 - 1)  // end of the day
         };
       case 'month':
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         return {
-          start: new Date(today.getFullYear(), today.getMonth(), 1),
-          end: new Date(today.getFullYear(), today.getMonth() + 1, 0)
+          start: startOfMonth,
+          end: new Date(endOfMonth.getTime() + 86400000 - 1)  // end of the day
         };
       case 'year':
+        const startOfYear = new Date(today.getFullYear(), 0, 1);
+        const endOfYear = new Date(today.getFullYear(), 11, 31);
         return {
-          start: new Date(today.getFullYear(), 0, 1),
-          end: new Date(today.getFullYear(), 11, 31)
+          start: startOfYear,
+          end: new Date(endOfYear.getTime() + 86400000 - 1)  // end of the day
         };
       default:
         return {
-          start: new Date(0),
-          end: new Date()
+          start: null,
+          end: null
         };
     }
   };
@@ -281,7 +291,6 @@ export default function DashReport() {
               ))}
             </Select>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Regional Division
@@ -372,7 +381,7 @@ export default function DashReport() {
                   <Table.Cell className="font-semibold text-gray-900">
                     {report.uniqueId}
                   </Table.Cell>
-                  
+
                   <Table.Cell>
                     <div className="flex flex-col">
                       <span className="font-medium">{report.fullName}</span>
@@ -381,7 +390,6 @@ export default function DashReport() {
                       </span>
                     </div>
                   </Table.Cell>
-
                   <Table.Cell>
                     <div className="flex flex-col">
                       <span>{report.district}</span>

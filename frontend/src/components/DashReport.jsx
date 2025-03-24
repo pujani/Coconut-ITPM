@@ -82,15 +82,23 @@ export default function DashReport() {
         regionalDivision: filters.regionalDivision,
         timeRange: filters.timeRange
       };
-
-      const { data } = await axios.get("/api/reports", { params });
-      setReports(Array.isArray(data.reports) ? data.reports : []);
-      calculateStatistics(Array.isArray(data.reports) ? data.reports : []);
-    } catch (err) {
+      
+    // Add stats request
+    const [reportsRes, statsRes] = await Promise.all([
+      axios.get("/api/reports", { params }),
+      axios.get("/api/reports/stats", { params })
+    ]);
+    
+    setReports(reportsRes.data);
+    setStats({
+      totalInspected: statsRes.data.totalInspected,
+      totalAffected: statsRes.data.totalAffected,
+      affectedPercentage: statsRes.data.percentage
+    });
+    }catch (err) {
       setError(err.message);
       toast.error("Failed to load reports");
-      setReports([]);  // Ensure reports is never undefined
-    } finally {
+    }finally {
       setLoading(false);
     }
   };

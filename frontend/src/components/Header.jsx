@@ -48,10 +48,7 @@ export default function Header() {
       </form> */}
 
       {/* Search Button for Mobile */}
-      <Button className="w-12 h-10 lg:hidden" color="gray" pill>
-        <AiOutlineSearch />
-      </Button>
-
+      
       {/* Display user information and actions if currentUser exists */}
       {currentUser && (
         <div className="flex gap-2 md:order-2">

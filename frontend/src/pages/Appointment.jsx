@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, TextInput, Label, Textarea, Alert, Select, Card, Spinner } from 'flowbite-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaArrowRight, FaMapMarkerAlt, FaUser, FaPhone, FaEnvelope, FaTree, FaExclamationTriangle, FaLeaf, FaImage } from 'react-icons/fa';
+import { FaArrowRight, FaMapMarkerAlt, FaUser, FaPhone, FaEnvelope, FaTree, FaExclamationTriangle, FaLeaf, FaImage, FaTimes } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -44,30 +44,60 @@ export default function Appointment() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    let newValue = value;
+
+    switch(name) {
+      case 'fullName':
+        newValue = value.replace(/[^A-Za-z\s]/g, '');
+        break;
+      case 'phone':
+        newValue = value.replace(/\D/g, '').slice(0, 10);
+        break;
+      case 'extent':
+      case 'numberOfPlants':
+      case 'numberOfPlantsAffected':
+        newValue = value.replace(/\D/g, '');
+        if (newValue === '0') newValue = '';
+        break;
+    }
+
+    setFormData(prev => ({ ...prev, [name]: newValue }));
     
-    // Clear error when field is updated
     if (errors[name]) {
-      setErrors({ ...errors, [name]: '' });
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
   const handleProvinceChange = (e) => {
     const province = e.target.value;
-    setFormData({ ...formData, province, district: '' });
+    setFormData(prev => ({ ...prev, province, district: '' }));
     setDistricts(provinces[province] || []);
   };
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files).slice(0, 3);
-    setFormData({ ...formData, photos: files });
+    const files = Array.from(e.target.files);
+    const remainingSlots = 3 - formData.photos.length;
+    const newFiles = files.slice(0, remainingSlots);
+    const updatedFiles = [...formData.photos, ...newFiles];
     
-    // Create preview URLs for selected photos
-    const previews = files.map(file => URL.createObjectURL(file));
-    setPhotoPreview(previews);
+    setFormData(prev => ({ ...prev, photos: updatedFiles }));
+    
+    const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+    setPhotoPreview(prev => [...prev, ...newPreviews]);
   };
 
-  // Clean up preview URLs when component unmounts
+  const removePhoto = (index) => {
+    const newPhotos = [...formData.photos];
+    const newPreviews = [...photoPreview];
+    
+    newPhotos.splice(index, 1);
+    newPreviews.splice(index, 1);
+    
+    URL.revokeObjectURL(photoPreview[index]);
+    setFormData(prev => ({ ...prev, photos: newPhotos }));
+    setPhotoPreview(newPreviews);
+  };
+
   useEffect(() => {
     return () => {
       photoPreview.forEach(url => URL.revokeObjectURL(url));
@@ -76,111 +106,65 @@ export default function Appointment() {
 
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.fullName || !/^[A-Za-z\s]+$/.test(formData.fullName)) {
-      newErrors.fullName = 'Please enter a valid name (letters only)';
+    let isValid = true;
+
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Please enter your full name';
+      isValid = false;
     }
-    
-    if (!formData.province) {
-      newErrors.province = 'Please select a province';
+
+    if (!/^\d{10}$/.test(formData.phone)) {
+      newErrors.phone = 'Phone number must be 10 digits';
+      isValid = false;
+      alert('Phone number must be exactly 10 digits');
     }
-    
-    if (!formData.district) {
-      newErrors.district = 'Please select a district';
+
+    if (!formData.extent || parseInt(formData.extent) <= 0) {
+      newErrors.extent = 'Please enter a valid land extent';
+      isValid = false;
     }
-    
-    if (!formData.address || formData.address.trim().length < 5) {
-      newErrors.address = 'Please enter a valid address (minimum 5 characters)';
+
+    if (!formData.numberOfPlants || parseInt(formData.numberOfPlants) <= 0) {
+      newErrors.numberOfPlants = 'Please enter a valid number of plants';
+      isValid = false;
     }
-    
-    if (!formData.extent || !/^\d+$/.test(formData.extent)) {
-      newErrors.extent = 'Please enter a valid number';
-    }
-    
-    if (!formData.numberOfPlants || !/^\d+$/.test(formData.numberOfPlants)) {
-      newErrors.numberOfPlants = 'Please enter a valid number';
-    }
-    
-    if (!formData.numberOfPlantsAffected || !/^\d+$/.test(formData.numberOfPlantsAffected)) {
-      newErrors.numberOfPlantsAffected = 'Please enter a valid number';
-    } else if (parseInt(formData.numberOfPlantsAffected) > parseInt(formData.numberOfPlants)) {
-      newErrors.numberOfPlantsAffected = 'Affected plants cannot exceed total plants';
-    }
-    
-    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-    
-    if (!formData.phone || !/^\d{10}$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid 10-digit phone number';
-    }
-    
+
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      toast.error('Please correct the errors in the form', {
-        position: 'top-right',
-        autoClose: 5000,
-      });
-      return;
-    }
-    
+    if (!validateForm()) return;
+
     setIsSubmitting(true);
-    
     const percentageAffected = (formData.numberOfPlantsAffected / formData.numberOfPlants) * 100;
-    
+
     const formDataToSend = new FormData();
-    Object.keys(formData).forEach(key => {
-      if (key !== 'photos') {
-        formDataToSend.append(key, formData[key]);
-      }
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key !== 'photos') formDataToSend.append(key, value);
     });
     
+    formData.photos.forEach(photo => formDataToSend.append('photos', photo));
     formDataToSend.append('userId', currentUser._id);
-    formData.photos.forEach(photo => {
-      formDataToSend.append('photos', photo);
-    });
-    
+
     try {
-      const response = await axios.post('/api/appointment', formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      await axios.post('/api/appointment', formDataToSend, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
-      // Success message with more user-friendly content
+
       toast.success(
         <div>
           <p className="font-semibold mb-2">Appointment Request Submitted!</p>
           <p>We've received your details about the {percentageAffected.toFixed(1)}% disease-affected plants.</p>
           <p className="mt-2">Our team will contact you soon to schedule a visit.</p>
         </div>,
-        {
-          position: 'top-center',
-          autoClose: 8000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: 'light',
-        }
+        { position: 'top-center', autoClose: 8000 }
       );
-      
-      setTimeout(() => { 
-        navigate('/');
-      }, 5000);
+
+      setTimeout(() => navigate('/'), 5000);
     } catch (error) {
-      console.error(error);
-      toast.error('Something went wrong. Please try again later.', {
-        position: 'top-right',
-        autoClose: 5000,
-      });
+      toast.error('Something went wrong. Please try again later.', { position: 'top-right' });
     } finally {
       setIsSubmitting(false);
     }
@@ -198,7 +182,7 @@ export default function Appointment() {
             Fill out the form below to request a visit from our agricultural experts
           </p>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Personal Information Section */}
@@ -208,7 +192,7 @@ export default function Appointment() {
               </h2>
               <div className="border-b border-gray-200 pb-2"></div>
             </div>
-            
+
             <div>
               <Label htmlFor="fullName" value="Full Name" className="flex items-center">
                 <FaUser className="mr-2 text-gray-500 text-sm" /> Full Name
@@ -221,14 +205,12 @@ export default function Appointment() {
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
+                onKeyPress={(e) => /[0-9]/.test(e.key) && e.preventDefault()}
                 color={errors.fullName ? 'failure' : 'gray'}
-                className="mt-1"
               />
-              {errors.fullName && (
-                <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
-              )}
+              {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
             </div>
-            
+
             <div>
               <Label htmlFor="email" value="Email" className="flex items-center">
                 <FaEnvelope className="mr-2 text-gray-500 text-sm" /> Email Address
@@ -248,7 +230,8 @@ export default function Appointment() {
                 <p className="text-red-500 text-sm mt-1">{errors.email}</p>
               )}
             </div>
-            
+
+            {/* Phone Number Field */}
             <div>
               <Label htmlFor="phone" value="Phone Number" className="flex items-center">
                 <FaPhone className="mr-2 text-gray-500 text-sm" /> Phone Number
@@ -261,16 +244,14 @@ export default function Appointment() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
+                onKeyPress={(e) => /\D/.test(e.key) && e.preventDefault()}
                 color={errors.phone ? 'failure' : 'gray'}
-                className="mt-1"
               />
-              {errors.phone && (
-                <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
-              )}
+              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
-            
-            {/* Location Information Section */}
-            <div className="space-y-6 col-span-2 mt-6">
+
+             {/* Location Information Section */}
+             <div className="space-y-6 col-span-2 mt-6">
               <h2 className="text-xl font-semibold text-gray-700 flex items-center">
                 <FaMapMarkerAlt className="mr-2 text-green-600" /> Location Details
               </h2>
@@ -344,14 +325,8 @@ export default function Appointment() {
               )}
             </div>
             
-            {/* Plantation Information Section */}
-            <div className="space-y-6 col-span-2 mt-6">
-              <h2 className="text-xl font-semibold text-gray-700 flex items-center">
-                <FaTree className="mr-2 text-green-600" /> Plantation Details
-              </h2>
-              <div className="border-b border-gray-200 pb-2"></div>
-            </div>
-            
+
+            {/* Land Extent Field */}
             <div>
               <Label htmlFor="extent" value="Land Extent" className="flex items-center">
                 <FaTree className="mr-2 text-gray-500 text-sm" /> Land Extent
@@ -365,12 +340,13 @@ export default function Appointment() {
                   name="extent"
                   value={formData.extent}
                   onChange={handleChange}
+                  onKeyPress={(e) => ['-', 'e', '+', '.'].includes(e.key) && e.preventDefault()}
+                  min="1"
                   color={errors.extent ? 'failure' : 'gray'}
                   className="flex-1"
                 />
                 <Select 
                   name="extentUnit" 
-                  required 
                   value={formData.extentUnit}
                   onChange={handleChange}
                   className="w-1/3"
@@ -380,11 +356,9 @@ export default function Appointment() {
                   <option value="Perches">Perches</option>
                 </Select>
               </div>
-              {errors.extent && (
-                <p className="text-red-500 text-sm mt-1">{errors.extent}</p>
-              )}
+              {errors.extent && <p className="text-red-500 text-sm mt-1">{errors.extent}</p>}
             </div>
-            
+
             <div>
               <Label htmlFor="numberOfPlants" value="Number of Plants" className="flex items-center">
                 <FaTree className="mr-2 text-gray-500 text-sm" /> Total Plants
@@ -397,6 +371,8 @@ export default function Appointment() {
                 name="numberOfPlants"
                 value={formData.numberOfPlants}
                 onChange={handleChange}
+                onKeyPress={(e) => ['-', 'e', '+', '.'].includes(e.key) && e.preventDefault()}
+                min="1"
                 color={errors.numberOfPlants ? 'failure' : 'gray'}
                 className="mt-1"
               />
@@ -417,6 +393,8 @@ export default function Appointment() {
                 name="numberOfPlantsAffected"
                 value={formData.numberOfPlantsAffected}
                 onChange={handleChange}
+                onKeyPress={(e) => ['-', 'e', '+', '.'].includes(e.key) && e.preventDefault()}
+                min="1"
                 color={errors.numberOfPlantsAffected ? 'failure' : 'gray'}
                 className="mt-1"
               />
@@ -425,14 +403,7 @@ export default function Appointment() {
               )}
             </div>
             
-            {/* Additional Information Section */}
-            <div className="space-y-6 col-span-2 mt-6">
-              <h2 className="text-xl font-semibold text-gray-700 flex items-center">
-                <FaLeaf className="mr-2 text-green-600" /> Additional Information
-              </h2>
-              <div className="border-b border-gray-200 pb-2"></div>
-            </div>
-            
+
             <div className="col-span-2">
               <Label htmlFor="message" value="Message" className="flex items-center">
                 <FaLeaf className="mr-2 text-gray-500 text-sm" /> Description of the Problem
@@ -448,37 +419,40 @@ export default function Appointment() {
                 className="mt-1"
               />
             </div>
-            
+
+            {/* Photo Upload Section */}
             <div className="col-span-2">
               <Label htmlFor="photos" value="Photos" className="flex items-center">
                 <FaImage className="mr-2 text-gray-500 text-sm" /> Upload Photos (1-3)
               </Label>
-              <div className="mt-1">
-                <input
-                  id="photos"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileChange}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  Upload clear photos of affected plants (max 3 photos)
-                </p>
-              </div>
+              <input
+                id="photos"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileChange}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+              />
               
               {photoPreview.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
                   {photoPreview.map((url, index) => (
-                    <div key={index} className="relative w-24 h-24 rounded-md overflow-hidden border border-gray-200">
+                    <div key={index} className="relative shrink-0 w-24 h-24 rounded-md overflow-hidden border border-gray-200">
                       <img src={url} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <FaTimes className="w-3 h-3" />
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
             </div>
           </div>
-          
+
           <div className="flex justify-center mt-8">
             <Button 
               type="submit" 

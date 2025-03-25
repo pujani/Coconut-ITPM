@@ -1,3 +1,4 @@
+// DashReport.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -48,6 +49,69 @@ const DISTRICTS_BY_PROVINCE = {
   'Sabaragamuwa Province': ['Kegalle', 'Ratnapura']
 };
 
+const galleDistrict = [
+  "Akmeemana",
+  "Ambalangoda",
+  "Baddegama",
+  "Balapitiya",
+  "Benthota",
+  "Bope-Poddala",
+  "Elpitiya",
+  "Galle Four Gravets",
+  "Gonapinuwala",
+  "Habaraduwa",
+  "Hikkaduwa",
+  "Imaduwa",
+  "Karandeniya",
+  "Nagoda",
+  "Neluwa",
+  "Niyagama",
+  "Thawalama",
+  "Welivitiya-Divithura",
+  "Yakkalamulla"
+];
+
+const mataraDistrict = [
+  "Akuressa",
+  "Athuraliya",
+  "Devinuwara",
+  "Dickwella",
+  "Hakmana",
+  "Kamburupitiya",
+  "Kirinda Puhulwella",
+  "Kotapola",
+  "Malimbada",
+  "Matara Four Gravets",
+  "Mulatiyana",
+  "Pasgoda",
+  "Pitabeddara",
+  "Thihagoda",
+  "Weligama",
+  "Welipitiya"
+];
+
+const hambantotaDistrict = [
+  "Ambalantota",
+  "Angunakolapelessa",
+  "Beliatta",
+  "Hambantota",
+  "Katuwana",
+  "Lunugamvehera",
+  "Okewela",
+  "Sooriyawewa",
+  "Tangalle",
+  "Thissamaharama",
+  "Walasmulla",
+  "Weeraketiya"
+];
+
+// Combined regional divisions for Southern Province districts
+const SOUTHERN_REGIONAL_DIVISIONS = {
+  'Galle': galleDistrict,
+  'Matara': mataraDistrict,
+  'Hambantota': hambantotaDistrict,
+};
+
 export default function DashReport() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,12 +125,15 @@ export default function DashReport() {
     regionalDivision: "",
     timeRange: "all"
   });
-
   const [stats, setStats] = useState({
     totalInspected: 0,
     totalAffected: 0,
     affectedPercentage: 0
   });
+
+  const showRegionalDropdown = 
+    filters.province === "Southern Province" && 
+    ["Galle", "Matara", "Hambantota"].includes(filters.district);
 
   useEffect(() => {
     fetchReports();
@@ -75,11 +142,12 @@ export default function DashReport() {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      let params = {
+      const params = {
         search: filters.search,
         province: filters.province,
         district: filters.district,
         regionalDivision: filters.regionalDivision,
+        timeRange: filters.timeRange
       };
 
       const dateRange = getDateRange();
@@ -128,12 +196,11 @@ export default function DashReport() {
     const { name, value } = e.target;
     const newFilters = { ...filters, [name]: value };
 
+    // Reset child selections when parent changes
     if (name === "province") {
       newFilters.district = "";
       newFilters.regionalDivision = "";
-    }
-
-    if (name === "district") {
+    } else if (name === "district") {
       newFilters.regionalDivision = "";
     }
 
@@ -199,6 +266,10 @@ export default function DashReport() {
     if (percentage < 50) return "warning";
     return "failure";
   };
+
+  const isSouthernProvinceFilter =
+    filters.province === "Southern Province" &&
+    ["Galle", "Matara", "Hambantota"].includes(filters.district);
 
   if (error) {
     return (
@@ -291,16 +362,32 @@ export default function DashReport() {
               ))}
             </Select>
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Regional Division
             </label>
-            <TextInput
-              name="regionalDivision"
-              placeholder="Enter division"
-              value={filters.regionalDivision}
-              onChange={handleFilterChange}
-            />
+            {showRegionalDropdown ? (
+              <Select
+                name="regionalDivision"
+                value={filters.regionalDivision}
+                onChange={handleFilterChange}
+              >
+                <option value="">All Divisions</option>
+                {(SOUTHERN_REGIONAL_DIVISIONS[filters.district] || []).map(division => (
+                  <option key={division} value={division}>
+                    {division}
+                  </option>
+                ))}
+              </Select>
+            ) : (
+              <TextInput
+                name="regionalDivision"
+                placeholder="Enter division"
+                value={filters.regionalDivision}
+                onChange={handleFilterChange}
+              />
+            )}
           </div>
 
           <div>
@@ -390,6 +477,7 @@ export default function DashReport() {
                       </span>
                     </div>
                   </Table.Cell>
+
                   <Table.Cell>
                     <div className="flex flex-col">
                       <span>{report.district}</span>

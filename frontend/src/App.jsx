@@ -35,6 +35,7 @@ function Layout() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/createReport" element={<CreateReport />} />
           <Route path="/update-client/:id" element={<UpdateClient />} />
+       
         </Route>
       </Routes>
 

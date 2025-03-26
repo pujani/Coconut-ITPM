@@ -14,9 +14,20 @@ const appointmentSchema = new mongoose.Schema({
   message: { type: String, required: true },
   photos: { type: [String], required: true },
   percentageAffected: { type: Number, required: true },
-  status: { type: String, default: 'pending' },
-  userId: { type: String, required: true }
-}, { timestamps: true });
+  riskAssessment: { 
+    type: String, 
+    enum: ['Low', 'Medium', 'High'], 
+    required: true 
+  },
+  status: { 
+    type: String, 
+    enum: ['pending', 'successful'], 
+    default: 'pending' 
+  },
+  responseMessage: String,
+  scheduledDate: Date,
+  scheduledTime: String,
+  userId: { type: String, required:true }
+}, { timestamps:true });
 
-const Appointments = mongoose.model('Appointments', appointmentSchema);
-module.exports = Appointments;
+module.exports = mongoose.model('Appointments', appointmentSchema);

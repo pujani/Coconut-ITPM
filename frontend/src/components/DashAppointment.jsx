@@ -1,11 +1,38 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { Avatar, Badge, Button, Card, TextInput, Label, Select, Textarea, Modal, Spinner, Progress } from "flowbite-react";
-import { IoTrashBinOutline, IoCheckmarkCircleOutline, IoCalendarOutline, IoLeafOutline } from "react-icons/io5";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  TextInput,
+  Label,
+  Select,
+  Textarea,
+  Modal,
+  Spinner,
+  Progress,
+} from "flowbite-react";
+import {
+  IoTrashBinOutline,
+  IoCheckmarkCircleOutline,
+  IoCalendarOutline,
+  IoLeafOutline,
+} from "react-icons/io5";
 import { CgSearch } from "react-icons/cg";
-import { FiFilter, FiMessageSquare, FiCalendar, FiPhone, FiMail } from "react-icons/fi";
-import { MdOutlinePhotoLibrary, MdLocationOn, MdOutlineNature } from "react-icons/md";
+import {
+  FiFilter,
+  FiMessageSquare,
+  FiCalendar,
+  FiPhone,
+  FiMail,
+} from "react-icons/fi";
+import {
+  MdOutlinePhotoLibrary,
+  MdLocationOn,
+  MdOutlineNature,
+} from "react-icons/md";
 import { HiOutlineClock, HiOutlineStatusOnline } from "react-icons/hi";
 import { BsFillGridFill, BsListUl, BsTree } from "react-icons/bs";
 import DatePicker from 'react-datepicker';
@@ -26,6 +53,8 @@ export default function DashAppointment() {
   const [showModal, setShowModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [responseMessage, setResponseMessage] = useState("");
+  const [scheduledDate, setScheduledDate] = useState(new Date());
+  const [scheduledTime, setScheduledTime] = useState("10:00");
   const itemsPerPage = 5;
 
   // Stats
@@ -42,18 +71,18 @@ export default function DashAppointment() {
       setLoading(true);
       try {
         const { data } = await axios.get("/api/appointment");
-        setAppointments(data.appointment);
-        setFilteredAppointments(data.appointment);
-        
+        setAppointments(data.appointments); // Corrected line
+        setFilteredAppointments(data.appointments); // Corrected line
+
         // Calculate stats
-        const totalCount = data.appointment.length;
-        const pendingCount = data.appointment.filter(app => app.status === "pending").length;
-        const successfulCount = data.appointment.filter(app => app.status === "successful").length;
-        const highRiskCount = data.appointment.filter(app => {
-          const percentage = (app.affectedPlants / app.numberOfPlants) * 100;
+        const totalCount = data.appointments?.length || 0;
+        const pendingCount = data.appointments?.filter(app => app.status === "pending")?.length || 0;
+        const successfulCount = data.appointments?.filter(app => app.status === "successful")?.length || 0;
+        const highRiskCount = data.appointments?.filter(app => {
+          const percentage = (app.numberOfPlantsAffected / app.numberOfPlants) * 100;
           return percentage > 30;
-        }).length;
-        
+        })?.length || 0;
+
         setStats({
           total: totalCount,
           pending: pendingCount,
@@ -89,22 +118,22 @@ export default function DashAppointment() {
     // Date range filter
     if (startDate && endDate) {
       filtered = filtered.filter(appointment => {
-        const appDate = new Date(appointment.date);
+        const appDate = new Date(appointment.createdAt);
         return appDate >= startDate && appDate <= endDate;
       });
     }
 
     // Status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter(appointment => 
+      filtered = filtered.filter(appointment =>
         appointment.status === statusFilter
       );
     }
 
     // Sorting
     filtered.sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
       return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
     });
 
@@ -112,10 +141,22 @@ export default function DashAppointment() {
     setCurrentPage(1);
   }, [searchQuery, startDate, endDate, statusFilter, sortOrder, appointments]);
 
+  // Pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredAppointments.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+
   // Calculate disease percentage
   const calculateDiseasePercentage = (appointment) => {
-    if (!appointment.numberOfPlants || !appointment.affectedPlants) return 0;
-    return ((appointment.affectedPlants / appointment.numberOfPlants) * 100).toFixed(2);
+    if (!appointment?.numberOfPlants || !appointment?.numberOfPlantsAffected) return 0;
+    return ((appointment.numberOfPlantsAffected / appointment.numberOfPlants) * 100).toFixed(2);
   };
 
   // Calculate risk level
@@ -147,15 +188,15 @@ export default function DashAppointment() {
       try {
         await axios.delete(`/api/appointment/${id}`);
         setAppointments(prev => prev.filter(p => p._id !== id));
-        
+
         // Update stats
         setStats(prev => ({
           ...prev,
           total: prev.total - 1,
-          pending: prev.pending - (appointments.find(a => a._id === id).status === "pending" ? 1 : 0),
-          successful: prev.successful - (appointments.find(a => a._id === id).status === "successful" ? 1 : 0)
+          pending: prev.pending - (appointments.find(a => a._id === id)?.status === "pending" ? 1 : 0),
+          successful: prev.successful - (appointments.find(a => a._id === id)?.status === "successful" ? 1 : 0)
         }));
-        
+
         Swal.fire("Deleted!", "Appointment has been deleted.", "success");
       } catch (error) {
         Swal.fire("Error!", "Delete failed. Please try again.", "error");
@@ -166,13 +207,14 @@ export default function DashAppointment() {
   // Update appointment status
   const handleStatusUpdate = async (id, newStatus) => {
     try {
-      await axios.put(`/api/appointment/${id}`, { status: newStatus });
-      
+      const payload = { status: newStatus };
+      const response = await axios.put(`/api/appointment/${id}`, payload);
+
       // Update local state
-      setAppointments(prev => prev.map(app => 
+      setAppointments(prev => prev.map(app =>
         app._id === id ? { ...app, status: newStatus } : app
       ));
-      
+
       // Update stats
       if (newStatus === "successful") {
         setStats(prev => ({
@@ -181,9 +223,10 @@ export default function DashAppointment() {
           successful: prev.successful + 1
         }));
       }
-      
+
       Swal.fire("Updated!", "Status has been updated.", "success");
     } catch (error) {
+      console.error(error);
       Swal.fire("Error!", "Update failed. Please try again.", "error");
     }
   };
@@ -194,19 +237,23 @@ export default function DashAppointment() {
       Swal.fire("Error!", "Please enter a response message.", "error");
       return;
     }
-    
+
     try {
       // You would typically send this message to the API
-      await axios.post(`/api/appointment/${selectedAppointment._id}/response`, { 
-        message: responseMessage 
+      await axios.put(`/api/appointment/${selectedAppointment._id}`, {
+        status: "successful",
+        responseMessage: responseMessage,
+        scheduledDate: scheduledDate,
+        scheduledTime: scheduledTime
       });
-      
+
       // Close modal and clear response
       setShowModal(false);
       setResponseMessage("");
-      
+
       Swal.fire("Success!", "Response sent to the farmer.", "success");
     } catch (error) {
+      console.error(error)
       Swal.fire("Error!", "Failed to send response. Please try again.", "error");
     }
   };
@@ -232,18 +279,20 @@ export default function DashAppointment() {
   const AppointmentCard = ({ appointment }) => {
     const diseasePercentage = calculateDiseasePercentage(appointment);
     const riskLevel = getRiskLevel(diseasePercentage);
-    
+
     return (
-      <Card className="mb-6 shadow-lg hover:shadow-xl transition-shadow border-t-4" 
-            style={{ borderTopColor: riskLevel.color === "red" ? "#EF4444" : 
-                                     riskLevel.color === "yellow" ? "#F59E0B" : "#10B981" }}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Card className="mb-6 shadow-lg hover:shadow-xl transition-shadow border-t-4"
+        style={{
+          borderTopColor: riskLevel.color === "red" ? "#EF4444" :
+            riskLevel.color === "yellow" ? "#F59E0B" : "#10B981"
+        }}>
+        <div className="grid grid-cols-1  gap-6">
           {/* Left Column */}
           <div className="space-y-4">
             <div className="flex justify-between items-start">
               <div className="flex items-center">
-                <Avatar 
-                  rounded 
+                <Avatar
+                  rounded
                   placeholderInitials={appointment.fullName?.charAt(0) || "F"}
                   className="mr-3"
                 />
@@ -251,11 +300,11 @@ export default function DashAppointment() {
                   <h3 className="text-xl font-bold text-gray-800">{appointment.fullName}</h3>
                   <p className="text-sm text-gray-500">
                     <IoCalendarOutline className="inline mr-1" />
-                    {formatDate(appointment.date)}
+                    {formatDate(appointment.createdAt)}
                   </p>
                 </div>
               </div>
-              <Badge 
+              <Badge
                 color={appointment.status === 'pending' ? 'warning' : 'success'}
                 className="text-sm"
               >
@@ -273,20 +322,7 @@ export default function DashAppointment() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-gray-50 p-2 rounded-lg">
-                <Label className="text-sm text-gray-500">Acres</Label>
-                <p className="font-medium text-center">{appointment.acres}</p>
-              </div>
-              <div className="bg-gray-50 p-2 rounded-lg">
-                <Label className="text-sm text-gray-500">Roods</Label>
-                <p className="font-medium text-center">{appointment.roods}</p>
-              </div>
-              <div className="bg-gray-50 p-2 rounded-lg">
-                <Label className="text-sm text-gray-500">Perches</Label>
-                <p className="font-medium text-center">{appointment.perches}</p>
-              </div>
-            </div>
+            {/* Acres, Roods and Perches are missing from the Schema */}
 
             <div className="flex gap-3">
               <div className="flex items-center">
@@ -308,8 +344,8 @@ export default function DashAppointment() {
                   <BsTree className="text-green-700 mr-2" />
                   <Label className="text-sm font-medium">Coconut Plantation Health</Label>
                 </div>
-                <Badge color={riskLevel.color === "red" ? "failure" : 
-                            riskLevel.color === "yellow" ? "warning" : "success"}>
+                <Badge color={riskLevel.color === "red" ? "failure" :
+                  riskLevel.color === "yellow" ? "warning" : "success"}>
                   {riskLevel.level} Risk
                 </Badge>
               </div>
@@ -321,8 +357,8 @@ export default function DashAppointment() {
                   </div>
                   <div className="flex items-center mt-1">
                     <IoLeafOutline className="text-green-700 mr-2" />
-                    <Progress 
-                      progress={100} 
+                    <Progress
+                      progress={100}
                       color="green"
                       className="w-full"
                     />
@@ -331,14 +367,14 @@ export default function DashAppointment() {
                 <div>
                   <div className="flex items-center justify-between">
                     <Label className="text-sm text-gray-500">Affected Plants</Label>
-                    <p className="font-medium">{appointment.affectedPlants}</p>
+                    <p className="font-medium">{appointment.numberOfPlantsAffected}</p>
                   </div>
                   <div className="flex items-center mt-1">
                     <MdOutlineNature className="text-red-700 mr-2" />
-                    <Progress 
-                      progress={(appointment.affectedPlants / appointment.numberOfPlants) * 100} 
-                      color={riskLevel.color === "red" ? "red" : 
-                             riskLevel.color === "yellow" ? "yellow" : "green"}
+                    <Progress
+                      progress={(appointment.numberOfPlantsAffected / appointment.numberOfPlants) * 100}
+                      color={riskLevel.color === "red" ? "red" :
+                        riskLevel.color === "yellow" ? "yellow" : "green"}
                       className="w-full"
                     />
                   </div>
@@ -346,8 +382,8 @@ export default function DashAppointment() {
               </div>
               <div className="text-center">
                 <Label className="text-sm text-gray-500">Disease Impact</Label>
-                <p className={`text-${riskLevel.color === "red" ? "red" : 
-                                       riskLevel.color === "yellow" ? "yellow" : "green"}-600 font-bold text-lg`}>
+                <p className={`text-${riskLevel.color === "red" ? "red" :
+                  riskLevel.color === "yellow" ? "yellow" : "green"}-600 font-bold text-lg`}>
                   {diseasePercentage}%
                 </p>
               </div>
@@ -382,352 +418,298 @@ export default function DashAppointment() {
                 <FiMessageSquare className="mr-1" />
                 Farmer's Message
               </Label>
-              <div className="bg-gray-50 p-3 rounded-lg mt-1 italic text-gray-700">
-                "{appointment.message}"
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-gray-700 italic">{appointment.message}</p>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Actions */}
-        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end gap-3">
-          <Button
-            color="light"
-            onClick={() => openResponseModal(appointment)}
-            className="hover:scale-105 transition-transform"
-          >
-            <FiMessageSquare className="mr-2" />
-            Respond
-          </Button>
-          <Button
-            color="failure"
-            onClick={() => handleDelete(appointment._id)}
-            className="hover:scale-105 transition-transform"
-          >
-            <IoTrashBinOutline className="mr-2" />
-            Delete
-          </Button>
-          {appointment.status === 'pending' && (
-            <Button
-              color="success"
-              onClick={() => handleStatusUpdate(appointment._id, 'successful')}
-              className="hover:scale-105 transition-transform"
-            >
-              <IoCheckmarkCircleOutline className="mr-2" />
-              Approve
-            </Button>
-          )}
+            <div className="flex justify-end gap-2">
+              <Button size="sm" color="failure" onClick={() => handleDelete(appointment._id)}>
+                <IoTrashBinOutline className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+              <Button size="sm" color="success" onClick={() => handleStatusUpdate(appointment._id, 'successful')}>
+                <IoCheckmarkCircleOutline className="mr-2 h-4 w-4" />
+                Approve
+              </Button>
+              <Button size="sm" color="info" onClick={() => openResponseModal(appointment)}>
+                <FiMessageSquare className="mr-2 h-4 w-4" />
+                Respond
+              </Button>
+            </div>
+          </div>
         </div>
       </Card>
     );
   };
 
-  // Appointment Table Row Component
-  const AppointmentRow = ({ appointment }) => {
-    const diseasePercentage = calculateDiseasePercentage(appointment);
-    const riskLevel = getRiskLevel(diseasePercentage);
-    
-    return (
-      <tr className="hover:bg-gray-50">
-        <td className="py-3 px-4">
-          <div className="flex items-center">
-            <Avatar 
-              rounded 
-              placeholderInitials={appointment.fullName?.charAt(0) || "F"}
-              className="mr-2"
-              size="sm"
-            />
-            <div>
-              <p className="font-medium">{appointment.fullName}</p>
-              <p className="text-xs text-gray-500">{appointment.email}</p>
-            </div>
-          </div>
-        </td>
-        <td className="py-3 px-4">
-          <Badge 
-            color={appointment.status === 'pending' ? 'warning' : 'success'}
-            className="text-xs"
-          >
-            {appointment.status}
-          </Badge>
-        </td>
-        <td className="py-3 px-4">
-          <div className="flex items-center">
-            <MdLocationOn className="text-gray-500 mr-1" />
-            <span>{appointment.province}, {appointment.district}</span>
-          </div>
-        </td>
-        <td className="py-3 px-4">
-          {formatDate(appointment.date)}
-        </td>
-        <td className="py-3 px-4">
-          <Badge 
-            color={riskLevel.color === "red" ? "failure" : 
-                  riskLevel.color === "yellow" ? "warning" : "success"}
-          >
-            {diseasePercentage}%
-          </Badge>
-        </td>
-        <td className="py-3 px-4">
-          <div className="flex gap-2 justify-end">
-            <Button size="xs" onClick={() => openResponseModal(appointment)}>
-              <FiMessageSquare />
-            </Button>
-            {appointment.status === 'pending' && (
-              <Button size="xs" color="success" onClick={() => handleStatusUpdate(appointment._id, 'successful')}>
-                <IoCheckmarkCircleOutline />
-              </Button>
-            )}
-            <Button size="xs" color="failure" onClick={() => handleDelete(appointment._id)}>
-              <IoTrashBinOutline />
-            </Button>
-          </div>
-        </td>
-      </tr>
-    );
-  };
-
-  // Pagination controls
-  const paginatedAppointments = filteredAppointments.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+  // Response Modal Component
+  const ResponseModal = () => (
+    <Modal show={showModal} size="md" onClose={() => setShowModal(false)}>
+      <Modal.Header>Respond to Farmer</Modal.Header>
+      <Modal.Body>
+        <div className="mb-4">
+          <Label htmlFor="responseMessage" value="Your Message:" />
+          <Textarea
+            id="responseMessage"
+            placeholder="Write a response message to the farmer..."
+            rows={4}
+            value={responseMessage}
+            onChange={(e) => setResponseMessage(e.target.value)}
+          />
+        </div>
+        <div className="mb-4">
+          <Label htmlFor="scheduledDate" value="Scheduled Date:" />
+          <DatePicker
+            id="scheduledDate"
+            selected={scheduledDate}
+            onChange={(date) => setScheduledDate(date)}
+            dateFormat="yyyy-MM-dd"
+            className="w-full rounded-md border p-2"
+          />
+        </div>
+        <div className="mb-4">
+          <Label htmlFor="scheduledTime" value="Scheduled Time:" />
+          <TextInput
+            id="scheduledTime"
+            type="time"
+            value={scheduledTime}
+            onChange={(e) => setScheduledTime(e.target.value)}
+            className="w-full rounded-md border p-2"
+          />
+        </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button color="blue" onClick={handleSendResponse}>
+          Send Response
+        </Button>
+        <Button color="gray" onClick={() => setShowModal(false)}>
+          Cancel
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 
   return (
-    <div className="mx-4 my-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center">
-        <BsTree className="mr-2 text-green-700" />
-        Coconut Technician Appointments
-      </h1>
-      <p className="text-gray-600 mb-8">
-        Manage and respond to farmer's appointment requests for coconut plantation inspection
-      </p>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">Manage Appointments</h2>
 
       {/* Stats Section */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <StatCard 
-          title="Total Appointments" 
-          value={stats.total} 
-          icon={<IoCalendarOutline />} 
-          color="blue" 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard
+          title="Total Appointments"
+          value={stats.total}
+          icon={<BsFillGridFill />}
+          color="blue"
         />
-        <StatCard 
-          title="Pending Appointments" 
-          value={stats.pending} 
-          icon={<HiOutlineClock />} 
-          color="yellow" 
+        <StatCard
+          title="Pending"
+          value={stats.pending}
+          icon={<HiOutlineClock />}
+          color="yellow"
         />
-        <StatCard 
-          title="Approved Appointments" 
-          value={stats.successful} 
-          icon={<IoCheckmarkCircleOutline />} 
-          color="green" 
+        <StatCard
+          title="Approved"
+          value={stats.successful}
+          icon={<IoCheckmarkCircleOutline />}
+          color="green"
         />
-        <StatCard 
-          title="High Risk Plantations" 
-          value={stats.highRisk} 
-          icon={<MdOutlineNature />} 
-          color="red" 
+        <StatCard
+          title="High Risk"
+          value={stats.highRisk}
+          icon={<IoLeafOutline />}
+          color="red"
         />
       </div>
 
-      {/* Filters Section */}
-      <Card className="mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div className="md:col-span-2">
-            <TextInput
-              icon={CgSearch}
-              placeholder="Search by name, email, location..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+      {/* Search and Filter Section */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-4">
+        <div className="flex items-center mb-2 md:mb-0">
+          <TextInput
+            type="search"
+            placeholder="Search appointments..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="mr-2"
+            icon={CgSearch}
+          />
+        </div>
 
-          <div className="flex items-center gap-2">
-            <FiCalendar className="text-gray-500" />
+        <div className="flex items-center space-x-3">
+          {/* Date Range Filter */}
+          <div className="flex items-center">
+            <Label htmlFor="startDate" className="mr-2">
+              Date Range:
+            </Label>
             <DatePicker
-              selectsRange
+              selectsRange={true}
               startDate={startDate}
               endDate={endDate}
-              onChange={([start, end]) => {
-                setStartDate(start);
-                setEndDate(end);
+              onChange={(update) => {
+                setStartDate(update[0]);
+                setEndDate(update[1]);
               }}
-              placeholderText="Select date range"
-              className="border rounded-lg p-2 w-full"
+              isClearable={true}
+              placeholderText="Select Date Range"
             />
           </div>
 
-          <Select
-            icon={FiFilter}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="successful">Approved</option>
-          </Select>
-
-          <div className="flex gap-2">
+          {/* Status Filter */}
+          <div>
+            <Label htmlFor="statusFilter" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Status:</Label>
             <Select
+              id="statusFilter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="successful">Approved</option>
+            </Select>
+          </div>
+
+          {/* Sort Order */}
+          <div>
+            <Label htmlFor="sortOrder" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Sort By:</Label>
+            <Select
+              id="sortOrder"
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
-              className="flex-grow"
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
             </Select>
-            <div className="flex border rounded-lg">
-              <Button 
-                color={viewType === "cards" ? "blue" : "light"}
-                onClick={() => setViewType("cards")}
-                className="rounded-r-none"
-              >
-                <BsFillGridFill />
-              </Button>
-              <Button 
-                color={viewType === "list" ? "blue" : "light"}
-                onClick={() => setViewType("list")}
-                className="rounded-l-none"
-              >
-                <BsListUl />
-              </Button>
-            </div>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Loading State */}
+      {/* View Toggle */}
+      <div className="flex justify-end mb-4">
+        <div className="flex items-center space-x-2">
+          <Label>View:</Label>
+          <Button
+            size="sm"
+            color={viewType === "cards" ? "blue" : "gray"}
+            onClick={() => setViewType("cards")}
+          >
+            <BsFillGridFill className="mr-2" />
+            Cards
+          </Button>
+          <Button
+            size="sm"
+            color={viewType === "list" ? "blue" : "gray"}
+            onClick={() => setViewType("list")}
+          >
+            <BsListUl className="mr-2" />
+            List
+          </Button>
+        </div>
+      </div>
+
+      {/* Appointments List or Cards */}
       {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Spinner size="xl" />
+        <div className="text-center">
+          <Spinner aria-label="Loading..." size="xl" />
+          <p className="mt-2">Loading appointments...</p>
+        </div>
+      ) : currentItems?.length === 0 ? (
+        <div className="text-center">
+          <p>No appointments found.</p>
         </div>
       ) : (
-        <>
-          {/* Empty State */}
-          {filteredAppointments.length === 0 ? (
-            <Card className="p-12 text-center">
-              <IoCalendarOutline className="mx-auto text-gray-400 text-5xl mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">No appointments found</h3>
-              <p className="text-gray-500">
-                {searchQuery || statusFilter !== "all" || (startDate && endDate) ? 
-                  "Try adjusting your filters to see more results." :
-                  "There are no appointments in the system yet."}
-              </p>
-            </Card>
+        <div>
+          {viewType === "cards" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {currentItems.map((appointment) => (
+                <AppointmentCard key={appointment._id} appointment={appointment} />
+              ))}
+            </div>
           ) : (
-            <>
-              {/* Appointments List */}
-              {viewType === "cards" ? (
-                <div className="space-y-6">
-                  {paginatedAppointments.map((appointment) => (
-                    <AppointmentCard key={appointment._id} appointment={appointment} />
-                  ))}
-                </div>
-              ) : (
-                <Card>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="py-3 px-4 text-left">Farmer</th>
-                          <th className="py-3 px-4 text-left">Status</th>
-                          <th className="py-3 px-4 text-left">Location</th>
-                          <th className="py-3 px-4 text-left">Date</th>
-                          <th className="py-3 px-4 text-left">Disease %</th>
-                          <th className="py-3 px-4 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedAppointments.map((appointment) => (
-                          <AppointmentRow key={appointment._id} appointment={appointment} />
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </Card>
-              )}
-
-              {/* Pagination */}
-              {filteredAppointments.length > itemsPerPage && (
-                <div className="flex justify-center mt-6">
-                  <div className="flex gap-2">
-                    <Button
-                      color="light"
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                    >
-                      Previous
-                    </Button>
-                    
-                    {Array.from({ length: Math.min(5, Math.ceil(filteredAppointments.length / itemsPerPage)) }, (_, i) => {
-                      const pageNumber = currentPage > 3 && Math.ceil(filteredAppointments.length / itemsPerPage) > 5 
-                        ? currentPage - 3 + i + 1 
-                        : i + 1;
-                        
-                      if (pageNumber <= Math.ceil(filteredAppointments.length / itemsPerPage)) {
-                        return (
-                          <Button
-                            key={pageNumber}
-                            color={currentPage === pageNumber ? "blue" : "light"}
-                            onClick={() => setCurrentPage(pageNumber)}
-                          >
-                            {pageNumber}
-                          </Button>
-                        );
-                      }
-                      return null;
-                    })}
-                    
-                    <Button
-                      color="light"
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredAppointments.length / itemsPerPage)))}
-                      disabled={currentPage === Math.ceil(filteredAppointments.length / itemsPerPage)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
+            <table className="min-w-full leading-normal">
+              <thead>
+                <tr>
+                  <th className="px-5 py-3 border-b-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-5 py-3 border-b-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-5 py-3 border-b-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Location
+                  </th>
+                  <th className="px-5 py-3 border-b-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-5 py-3 border-b-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentItems.map((appointment) => (
+                  <tr key={appointment._id}>
+                    <td className="px-5 py-5 border-b text-sm">
+                      {appointment.fullName}
+                    </td>
+                    <td className="px-5 py-5 border-b text-sm">
+                      {formatDate(appointment.createdAt)}
+                    </td>
+                    <td className="px-5 py-5 border-b text-sm">
+                      {appointment.province}, {appointment.district}
+                    </td>
+                    <td className="px-5 py-5 border-b text-sm">
+                      <Badge
+                        color={
+                          appointment.status === "pending" ? "warning" : "success"
+                        }
+                      >
+                        {appointment.status}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-5 border-b text-sm">
+                      <Button size="sm" color="failure" onClick={() => handleDelete(appointment._id)}>
+                        <IoTrashBinOutline className="mr-2 h-4 w-4" />
+                        Delete
+                      </Button>
+                      <Button size="sm" color="success" onClick={() => handleStatusUpdate(appointment._id, 'successful')}>
+                        <IoCheckmarkCircleOutline className="mr-2 h-4 w-4" />
+                        Approve
+                      </Button>
+                      <Button size="sm" color="info" onClick={() => openResponseModal(appointment)}>
+                        <FiMessageSquare className="mr-2 h-4 w-4" />
+                        Respond
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
-        </>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {filteredAppointments.length > itemsPerPage && (
+        <div className="flex justify-center mt-4">
+          <nav>
+            <ul className="flex list-style-none">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+                <li key={pageNumber} className="page-item">
+                  <button
+                    onClick={() => paginate(pageNumber)}
+                    className={`page-link px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 ${currentPage === pageNumber ? 'bg-blue-100 text-blue-700' : ''}`}
+                  >
+                    {pageNumber}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
       )}
 
       {/* Response Modal */}
-      <Modal show={showModal} onClose={() => setShowModal(false)}>
-        <Modal.Header>
-          Respond to {selectedAppointment?.fullName}
-        </Modal.Header>
-        <Modal.Body>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="farmerMessage" value="Farmer's Message" />
-              <div className="mt-2 p-3 bg-gray-50 rounded-lg text-gray-700 italic">
-                "{selectedAppointment?.message}"
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="responseMessage" value="Your Response" />
-              <Textarea
-                id="responseMessage"
-                placeholder="Type your response to the farmer here..."
-                rows={5}
-                value={responseMessage}
-                onChange={(e) => setResponseMessage(e.target.value)}
-                className="mt-2"
-              />
-            </div>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button onClick={handleSendResponse}>Send Response</Button>
-          <Button color="light" onClick={() => setShowModal(false)}>
-            Cancel
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <ResponseModal />
     </div>
   );
 }

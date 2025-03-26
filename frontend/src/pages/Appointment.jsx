@@ -41,6 +41,14 @@ export default function Appointment() {
   const [photoPreview, setPhotoPreview] = useState([]);
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleData, setScheduleData] = useState({
+    date: null,
+    time: '',
+    message: ''
+  });
+
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -140,6 +148,7 @@ export default function Appointment() {
     setIsSubmitting(true);
     const percentageAffected = (formData.numberOfPlantsAffected / formData.numberOfPlants) * 100;
 
+
     const formDataToSend = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       if (key !== 'photos') formDataToSend.append(key, value);
@@ -169,6 +178,49 @@ export default function Appointment() {
       setIsSubmitting(false);
     }
   };
+
+  // Modified handleStatusUpdate function
+const handleStatusUpdate = async (id, newStatus) => {
+  try {
+    if (newStatus === 'successful') {
+      // Validate schedule data before submission
+      if (!scheduleData.date || !scheduleData.time || !scheduleData.message) {
+        Swal.fire("Error!", "Please fill all scheduling details", "error");
+        return;
+      }
+      
+      const appointmentUpdate = {
+        status: newStatus,
+        responseMessage: scheduleData.message,
+        scheduledDate: scheduleData.date,
+        scheduledTime: scheduleData.time
+      };
+
+      const { data } = await axios.put(`/api/appointment/${id}`, appointmentUpdate);
+      
+      // Update local state with new data
+      setAppointments(prev => prev.map(app => 
+        app._id === id ? { ...app, ...data } : app
+      ));
+
+      // Reset schedule data
+      setScheduleData({
+        date: null,
+        time: '',
+        message: ''
+      });
+    } else {
+      await axios.put(`/api/appointment/${id}`, { status: newStatus });
+    }
+
+    // Stats update logic remains the same
+    Swal.fire("Updated!", "Appointment has been updated", "success");
+  } catch (error) {
+    Swal.fire("Error!", error.response?.data?.message || "Update failed", "error");
+   }
+  };
+
+  
 
   return (
     <div className="p-4 max-w-4xl mx-auto min-h-screen">

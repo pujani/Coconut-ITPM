@@ -4,8 +4,8 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { FaFileDownload } from 'react-icons/fa';
 import { IoCheckmarkCircleOutline, IoTimeOutline } from 'react-icons/io5';
-import { FiUser, FiPhone, FiBriefcase, FiMessageSquare, FiCalendar, FiClock } from 'react-icons/fi';
-import JsPDF from 'jspdf';
+import { FiUser, FiPhone, FiBriefcase, FiMessageSquare, FiCalendar, FiClock, FiHome } from 'react-icons/fi';
+import jsPDF from 'jspdf';
 
 export default function Profile() {
   const [appointments, setAppointments] = useState([]);
@@ -15,7 +15,7 @@ export default function Profile() {
     const fetchAppointments = async () => {
       try {
         const { data } = await axios.get(`/api/appointment?userId=${currentUser._id}`);
-        setAppointments(data.appointment);
+        setAppointments(data.appointments); // Corrected line
       } catch (error) {
         console.error(error);
       }
@@ -23,10 +23,27 @@ export default function Profile() {
     fetchAppointments();
   }, [currentUser._id]);
 
-  const generatePDF = (name, company, date, time) => {
-    const pdf = new JsPDF();
-    // PDF generation logic remains the same
-    pdf.save("booking-confirmation.pdf");
+  const calculateRiskAssessment = (percentage) => {
+    if (percentage > 40) return 'High';
+    if (percentage > 25) return 'Medium';
+    return 'Low';
+  };
+
+  const generatePDF = (appointment) => {
+    const pdf = new jsPDF();
+
+    // PDF Content
+    pdf.setFontSize(18);
+    pdf.text('Appointment Confirmation', 20, 20);
+
+    // Add actual appointment details
+    pdf.setFontSize(12);
+    pdf.text(`Name: ${appointment.fullName}`, 20, 30);
+    pdf.text(`Scheduled Date: ${appointment.scheduledDate ? new Date(appointment.scheduledDate).toLocaleDateString() : 'Not Scheduled'}`, 20, 40);
+    pdf.text(`Scheduled Time: ${appointment.scheduledTime || 'Not Scheduled'}`, 20, 50);
+    pdf.text(`Officer Message: ${appointment.responseMessage || 'No Message'}`, 20, 60);
+
+    pdf.save(`appointment-confirmation-${appointment._id}.pdf`);
   };
 
   return (
@@ -38,8 +55,8 @@ export default function Profile() {
 
       {appointments.length > 0 ? (
         appointments.map((appointment) => (
-          <Card 
-            key={appointment._id} 
+          <Card
+            key={appointment._id}
             className="mb-6 shadow-lg hover:shadow-xl transition-shadow"
           >
             <div className="flex flex-col space-y-4">
@@ -52,14 +69,10 @@ export default function Profile() {
                 >
                   {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                 </Badge>
+
                 {appointment.status === "successful" && (
                   <Button
-                    onClick={() => generatePDF(
-                      appointment.fullName,
-                      appointment.companyName,
-                      appointment.date,
-                      appointment.time
-                    )}
+                    onClick={() => generatePDF(appointment)}
                     color="success"
                     size="sm"
                   >
@@ -71,38 +84,91 @@ export default function Profile() {
 
               {/* Appointment Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {/* Left Column */}
                 <div className="space-y-2">
                   <div className="flex items-center">
                     <FiUser className="text-gray-500 mr-2" />
                     <span className="font-medium">Name:</span>
                     <span className="ml-2">{appointment.fullName}</span>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <FiPhone className="text-gray-500 mr-2" />
                     <span className="font-medium">Contact:</span>
                     <span className="ml-2">{appointment.phone}</span>
                   </div>
-                  
+
                   <div className="flex items-center">
-                    <FiBriefcase className="text-gray-500 mr-2" />
-                    <span className="font-medium">Company:</span>
-                    <span className="ml-2">{appointment.companyName}</span>
+                    <FiHome className="text-gray-500 mr-2" />
+                    <span className="font-medium">Address:</span>
+                    <span className="ml-2">{appointment.address}</span>
+                  </div>
+
+                  <div className="flex items-center">
+                    <FiCalendar className="text-gray-500 mr-2" />
+                    <span className="font-medium">Created Date:</span>
+                    <span className="ml-2">{new Date(appointment.createdAt).toLocaleDateString()}</span>
+                  </div>
+
+                  <div className="flex items-center">
+                    <FiClock className="text-gray-500 mr-2" />
+                    <span className="font-medium">Created Time:</span>
+                    <span className="ml-2">{new Date(appointment.createdAt).toLocaleTimeString()}</span>
+                  </div>
+
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <span className="font-medium">Land Extent:</span>
+                    <span className="ml-2">{appointment.extent} {appointment.extentUnit}</span>
+                  </div>
+
+                  <div className="flex items-center">
+                    <span className="font-medium">Number of Plants:</span>
+                    <span className="ml-2">{appointment.numberOfPlants}</span>
+                  </div>
+
+                  <div className="flex items-center">
+                    <span className="font-medium">Due to your observations,</span>
+                  </div>
+
+                  <div className="flex items-center">
+                    <span className="font-medium">Affected Plants:</span>
+                    <span className="ml-2">{appointment.numberOfPlantsAffected}</span>
+                  </div>
+
+                  <div className="flex items-center">
+                    <span className="font-medium">Percentage of Disease Affected:</span>
+                    <span className="ml-2">{appointment.percentageAffected?.toFixed(2)}%</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="font-medium">Risk Assesment:</span>
+                    <p>
+                      <span className={`px-2 py-1 ml-2 rounded ${appointment.riskAssessment === 'High' ? 'bg-red-200' :
+                        appointment.riskAssessment === 'Medium' ? 'bg-yellow-200' : 'bg-green-200'}`}>
+                        {appointment.riskAssessment}
+                      </span>
+                    </p>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <FiCalendar className="text-gray-500 mr-2" />
-                    <span className="font-medium">Date:</span>
-                    <span className="ml-2">{new Date(appointment.date).toLocaleDateString()}</span>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <FiClock className="text-gray-500 mr-2" />
-                    <span className="font-medium">Time:</span>
-                    <span className="ml-2">{appointment.time}</span>
-                  </div>
+
+                {/* Scheduled Section */}
+                <div className="mt-4">
+                  <p className="font-semibold">
+                    {appointment.status === 'pending' ? (
+                      <span className="text-yellow-600">Scheduled soon</span>
+                    ) : (
+                      <>
+                        Scheduled Date: {appointment.scheduledDate ? new Date(appointment.scheduledDate).toLocaleDateString() : 'Not Scheduled'}
+                        <br />
+                        Scheduled Time: {appointment.scheduledTime || 'Not Scheduled'}
+                      </>
+                    )}
+                  </p>
                 </div>
               </div>
 

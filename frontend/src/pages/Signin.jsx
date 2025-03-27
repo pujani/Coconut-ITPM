@@ -6,115 +6,142 @@ import {
   signInStart,
   signInSuccess,
   signInFailure,
-} from "../redux/user/userSlice";    // Importing action creators from Redux slice
-import logo from "../image/logo.png";
+} from "../redux/user/userSlice";
+
+// Import a new logo for Coconut GuardSL
+import logo from "../image/coconutlogo.png";
 
 export default function Signin() {
-  const dispatch = useDispatch();  // Redux dispatch function
-  const [formData, setFormData] = useState({}); // State to hold form data
-  const { loading, error: errorMessage } = useSelector((state) => state.user); // Selecting loading state and error message from Redux store
-  const navigate = useNavigate(); // React Router's navigate hook
+  const dispatch = useDispatch();
+  const [formData, setFormData] = useState({});
+  const { loading, error: errorMessage } = useSelector((state) => state.user);
+  const navigate = useNavigate();
   
-    // Function to handle form input changes
   const handleChange = (e) => {
-    // Update formData state with input values (trimmed)
     setFormData({ ...formData, [e.target.id]: e.target.value.trim() });
   };
 
-  // Function to handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault();  // Prevent default form submission behavior
+    e.preventDefault();
 
-    // Check if email and password are provided
     if (!formData.email || !formData.password) {
-      // Dispatch failure action if fields are not filled
       return dispatch(signInFailure("Please fill out all the fields."));
     }
 
     try {
-      dispatch(signInStart());  // Dispatch start action (loading state)
+      dispatch(signInStart());
 
-      // Send POST request to sign-in endpoint with form data
       const res = await fetch("/api/auth/signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData), // Convert formData to JSON string
+        body: JSON.stringify(formData),
       });
-      const data = await res.json();   // Parse response data 
-
-      console.log(data); // Log response data to console
-
+      const data = await res.json();
 
       if (data.success === false) {
-         // Dispatch failure action if sign-in was unsuccessful
         dispatch(signInFailure(data.message));
       }
 
       if (res.ok) {
-         // Dispatch success action if response is successful
         dispatch(signInSuccess(data));
-        navigate("/"); // Navigate user to home page
+        navigate("/");
       }
     } catch (error) {
-      // Dispatch failure action if an error occurs during fetch
       dispatch(signInFailure(error.message));
     }
   };
 
   return (
-    <div className="min-h-screen mt-20">
-      <div className="flex p-3 max-w-3xl mx-auto flex-col md:flex-row md:items-center gap-5">
-        {/* left */}
-        <div className="flex-1">
-          <div className="bg-slate-900">
-            <img src={logo} alt="logo" className="h-20" />
-          </div>
-          <p className="text-sm mt-5">
-      
-
-Welcome to Shan Construction Management System, your comprehensive solution for efficient project management in the construction industry. Whether you're overseeing residential developments, commercial builds, or infrastructure projects, Shan Construction offers tailored tools and resources to streamline workflows, optimize scheduling, and enhance collaboration. Discover how our platform can elevate your construction management experience from planning to completion.
+    <div className="min-h-screen bg-gradient-to-br from-green-100 to-blue-200 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white shadow-2xl rounded-xl p-8 border border-gray-200">
+        <div className="text-center">
+        <img 
+            className="mx-auto h-24 w-auto" 
+            src={logo} 
+            alt="Coconut GuardSL Logo" 
+          />
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Coconut GuardSL
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Secure Health Management Platform
           </p>
         </div>
-
-        {/* right */}
-        <div className="flex-1">
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <Label value="Your email" />
+              <Label htmlFor="email" className="sr-only">Email address</Label>
               <TextInput
-                type="email"
-                placeholder="name@company.com"
                 id="email"
-                onChange={handleChange} // Moved onChange to TextInput
+                type="email"
+                required
+                placeholder="Email address"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                onChange={handleChange}
               />
             </div>
             <div>
-              <Label value="Your password" />
+              <Label htmlFor="password" className="sr-only">Password</Label>
               <TextInput
-                type="password"
-                placeholder="**************"
                 id="password"
-                onChange={handleChange} // Moved onChange to TextInput
+                type="password"
+                required
+                placeholder="Password"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                onChange={handleChange}
               />
             </div>
+          </div>
 
-            <Button gradientDuoTone="purpleToPink" type="submit">
-              Sign In
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              />
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                Remember me
+              </label>
+            </div>
+
+            <div className="text-sm">
+              <a href="#" className="font-medium text-green-600 hover:text-green-500">
+                Forgot your password?
+              </a>
+            </div>
+          </div>
+
+          <div>
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              {loading ? "Signing In..." : "Sign In"}
             </Button>
-          </form>
+          </div>
+        </form>
 
-          <div className="flex gap-2 text-sm mt-5">
-            <span>Don't Have an account?</span>
-            <Link to="/sign-up" className="text-blue-500">
+        <div className="text-center mt-4">
+          <span className="text-sm text-gray-600">
+            Don't have an account?{" "}
+            <Link 
+              to="/sign-up" 
+              className="font-medium text-green-600 hover:text-green-500"
+            >
               Sign Up
             </Link>
-          </div>
-          {errorMessage && (
-            <Alert className="mt-5" color="failure">
-              {errorMessage}
-            </Alert>
-          )}
+          </span>
         </div>
+
+        {errorMessage && (
+          <Alert className="mt-5" color="failure">
+            {errorMessage}
+          </Alert>
+        )}
       </div>
     </div>
   );

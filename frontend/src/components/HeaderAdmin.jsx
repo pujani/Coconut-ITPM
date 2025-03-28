@@ -5,7 +5,7 @@ import { Navbar, Dropdown, Avatar, Button } from "flowbite-react"; // Importing 
 import { signoutSuccess } from "../redux/user/userSlice"; // Importing Redux action creator
 import { AiOutlineSearch } from "react-icons/ai"; // Importing search icon from React Icons
 import { FaBell } from "react-icons/fa"; // Importing bell icon from React Icons
-import logo from "../image/logo2.png"; // Importing logo image
+import logo from "../image/coconutlogo.png";
 
 export default function HeaderAdmin() {
   const [isBellPopupOpen, setIsBellPopupOpen] = useState(false); // State for controlling bell popup visibility
@@ -33,23 +33,7 @@ export default function HeaderAdmin() {
     }
   };
 
-  // BellPopup component to display notifications
-  const BellPopup = () => (
-    <div className="absolute right-0 mt-2 py-2 w-48 bg-white rounded-md shadow-xl z-20">
-      <ul>
-        <li className="cursor-pointer px-4 py-2 hover:bg-gray-100">
-          Notification 1
-        </li>
-        <li className="cursor-pointer px-4 py-2 hover:bg-gray-100">
-          Notification 2
-        </li>
-        <li className="cursor-pointer px-4 py-2 hover:bg-gray-100">
-          Notification 3
-        </li>
-      </ul>
-    </div>
-  );
-
+  
   return (
     <Navbar className="border-b-2 bg-white relative">
       {/* Logo Link */}
@@ -57,13 +41,19 @@ export default function HeaderAdmin() {
         to="/"
         className="self-center whitespace-nowrap text-sm sm:text-xl font-semibold"
       >
-        <img src={logo} alt="logo" className="h-14" />
+         <Navbar.Brand href="/" className="flex items-center">
+                <img 
+                  src={logo} 
+                  alt="Coconut GuardSL Logo" 
+                  className="mr-3 h-12 sm:h-14" 
+                />
+                <span className="self-center whitespace-nowrap text-xl font-semibold text-green-800">
+                  Coconut GuardSL
+                </span>
+              </Navbar.Brand>  
       </Link>
 
-      {/* Search Button for Mobile */}
-      <Button className="w-12 h-10 lg:hidden" color="gray" pill>
-        <AiOutlineSearch />
-      </Button>
+      
 
       {/* Display user information and actions if currentUser exists */}
       {currentUser && (

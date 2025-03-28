@@ -20,7 +20,7 @@ export default function DashSideBar() {
         <Sidebar.ItemGroup className="flex flex-col gap-1">
           <Link to="/dashboard?tab=client">
             <Sidebar.Item active={tab === "client"} labelColor="dark" as="div">
-              Cilent
+              Reports
             </Sidebar.Item>
           </Link>
 

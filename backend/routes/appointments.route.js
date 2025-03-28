@@ -4,6 +4,8 @@ const { createAppointment, getAppointments, updateAppointment, deleteAppointment
 
 const router = express.Router();
 
+router.get("/test", (req,res) => res.send("hiii"));
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination(req, file, cb) {

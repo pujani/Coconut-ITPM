@@ -33,15 +33,23 @@ import { HiOutlineDocumentReport } from 'react-icons/hi';
 import { motion } from 'framer-motion';
 import { Link } from "react-router-dom";
 import logo from "../image/coconutlogo.png";
+import hero1Image from "../image/hero1.jpg";
+import farmer1Image from "../image/farmer1.jpg"; // Renamed to farmer1Image
+import ctofficer1Image from "../image/ctofficer1.jpg"; // Renamed to ctofficer1Image
+import farmer2Image from "../image/farmer2.jpg"; // Renamed to farmer2Image
+import ctofficer2Image from "../image/ctofficer2.jpg"; // Renamed to ctofficer2Image
+import farmer3Image from "../image/farmer3.jpg"; // Renamed to farmer3Image
 
 // Placeholder images - replace with actual assets
-const heroBackgroundImage = "image/hero1.jpg";
-const mapPlaceholder = "https://via.placeholder.com/600x400";
-const farmer1 = "https://via.placeholder.com/100x100";
-const farmer2 = "https://via.placeholder.com/100x100";
-const farmer3 = "https://via.placeholder.com/100x100";
-const beforeTreeImage = "https://via.placeholder.com/300x200";
-const afterTreeImage = "https://via.placeholder.com/300x200";
+const heroBackgroundImage = hero1Image;
+
+// Correct assignments
+const farmer1 = farmer1Image;
+const farmer2 = farmer2Image; // Use farmer2Image instead of ctofficer1
+const farmer3 = farmer3Image; // Use farmer3Image instead of farmer2
+const beforeTreeImage = farmer1Image; // Use farmer1Image instead of ctofficer2
+const afterTreeImage = farmer3Image; // Use farmer3Image instead of farmer3
+
 
 
 
@@ -53,7 +61,7 @@ export default function Home() {
   // Translations
   const translations = {
     en: {
-      headline: "Protect Your Coconut Crops â€“ Detect Diseases, Get Expert Help, Save Your Harvest!",
+      headline: "Protect Your Coconut Crops  Detect Diseases, Get Expert Help, Save Your Harvest!",
       scanButton: "Scan Coconut Disease Now",
       bookButton: "Book CT Officer Appointment",
       chatButton: "Ask Our Farming Chatbot",
@@ -157,7 +165,7 @@ export default function Home() {
   />
   
   {/* Gradient Overlay */}
-  <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/70 via-black/60 to-transparent" />
+  <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/70 via-black/60 to-transparent" />
   
   {/* Content Container */}
   <div className="container mx-auto px-6 z-20 w-full">
@@ -318,7 +326,7 @@ export default function Home() {
   />
 </div>
 
-      {/* Key Features Section */}
+ {/* Key Features Section */}
 <section className="py-24 bg-gradient-to-b from-white to-gray-50">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="text-center mb-16">
@@ -344,7 +352,6 @@ export default function Home() {
             <p className="text-gray-600 mb-6 leading-relaxed">{t.aiScannerDesc}</p>
           </div>
           <div className="relative overflow-hidden h-56 w-full">
-           
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
               <span className="text-white font-medium p-6">Learn more about our scanner technology</span>
             </div>
@@ -395,12 +402,7 @@ export default function Home() {
             <p className="text-gray-600 mb-6 leading-relaxed">{t.riskMapDesc}</p>
           </div>
           <div className="relative h-56 w-full overflow-hidden">
-             <img 
-                        className="mx-auto h-24 w-auto" 
-                        src={logo} 
-                        alt="Coconut GuardSL Logo" 
-                      />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
               <button className="px-6 py-3 bg-gray-900/80 text-white rounded-lg flex items-center transform transition-transform duration-300 hover:scale-105">
                 <HiOutlineDocumentReport className="mr-2" />
                 {t.viewFullMap}
@@ -412,6 +414,7 @@ export default function Home() {
     </div>
   </div>
 </section>
+
       
       {/* Quick Stats Dashboard */}
 <section className="py-24 bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -567,145 +570,9 @@ export default function Home() {
     </div>
   </div>
 </section>
-      {/* Interactive Risk Map */}
-      <div className="py-16 bg-gray-50">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              <span className="border-b-4 border-red-500 pb-2">Disease Risk Map</span>
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Monitor disease spread in real-time across all provinces. Hover over regions to see detailed statistics.
-            </p>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-xl p-6 overflow-hidden">
-            <div className="relative">
-              <img 
-                src={mapPlaceholder} 
-                alt="Sri Lanka Risk Map" 
-                className="w-full h-96 object-contain mx-auto"
-              />
-              {/* Sample Risk Indicators - These would be dynamic in a real app */}
-              <div className="absolute" style={{ top: '30%', left: '40%' }}>
-                <Badge color="red" className="px-3 py-2 cursor-pointer">
-                  Matara: High Risk
-                </Badge>
-              </div>
-              <div className="absolute" style={{ top: '60%', left: '60%' }}>
-                <Badge color="yellow" className="px-3 py-2 cursor-pointer">
-                  Galle: Medium Risk
-                </Badge>
-              </div>
-              <div className="absolute" style={{ top: '45%', left: '70%' }}>
-                <Badge color="green" className="px-3 py-2 cursor-pointer">
-                  Hambantota: Low Risk
-                </Badge>
-              </div>
-            </div>
-            
-            <div className="mt-6 flex justify-center">
-              <Button color="dark" size="lg">
-                <HiOutlineDocumentReport className="mr-2" />
-                {t.viewFullMap}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
-      {/* Farmer Testimonials */}
-      <div className="py-16 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              <span className="border-b-4 border-green-500 pb-2">{t.farmerStories}</span>
-            </h2>
-          </div>
-          
-          <div className="max-w-4xl mx-auto">
-            <Carousel slide={false} indicators={true}>
-              <div className="p-6 md:p-12 bg-gray-50 rounded-xl">
-                <div className="flex flex-col md:flex-row items-center">
-                  <div className="md:w-1/3 mb-6 md:mb-0">
-                    <img 
-                      src={farmer1} 
-                      alt="Farmer" 
-                      className="rounded-full w-32 h-32 mx-auto border-4 border-green-500"
-                    />
-                    <p className="font-bold text-center mt-4">K. Perera, Matara</p>
-                  </div>
-                  <div className="md:w-2/3 md:pl-8">
-                    <p className="text-lg italic">"This app saved my farm from the new disease! The AI detected early signs before I could see them, and the CT officer gave me treatment advice that worked perfectly."</p>
-                    <div className="mt-6 grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium mb-2">Before Treatment:</p>
-                        <img src={beforeTreeImage} alt="Before" className="rounded-lg w-full" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium mb-2">After Treatment:</p>
-                        <img src={afterTreeImage} alt="After" className="rounded-lg w-full" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-6 md:p-12 bg-gray-50 rounded-xl">
-                <div className="flex flex-col md:flex-row items-center">
-                  <div className="md:w-1/3 mb-6 md:mb-0">
-                    <img 
-                      src={farmer2} 
-                      alt="Farmer" 
-                      className="rounded-full w-32 h-32 mx-auto border-4 border-green-500"
-                    />
-                    <p className="font-bold text-center mt-4">S. Fernando, Galle</p>
-                  </div>
-                  <div className="md:w-2/3 md:pl-8">
-                    <p className="text-lg italic">"I was losing hope when my trees started showing strange symptoms. The chatbot helped identify the issue, and within days of following the recommended treatment, my trees started recovering!"</p>
-                    <div className="mt-6 grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium mb-2">Before Treatment:</p>
-                        <img src={beforeTreeImage} alt="Before" className="rounded-lg w-full" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium mb-2">After Treatment:</p>
-                        <img src={afterTreeImage} alt="After" className="rounded-lg w-full" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-6 md:p-12 bg-gray-50 rounded-xl">
-                <div className="flex flex-col md:flex-row items-center">
-                  <div className="md:w-1/3 mb-6 md:mb-0">
-                    <img 
-                      src={farmer3} 
-                      alt="Farmer" 
-                      className="rounded-full w-32 h-32 mx-auto border-4 border-green-500"
-                    />
-                    <p className="font-bold text-center mt-4">A. Silva, Hambantota</p>
-                  </div>
-                  <div className="md:w-2/3 md:pl-8">
-                    <p className="text-lg italic">"Our entire village now uses this app! The risk map helped us create a community protection plan. Working together, we've reduced disease spread by over 80% in just three months."</p>
-                    <div className="mt-6 grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium mb-2">Before Treatment:</p>
-                        <img src={beforeTreeImage} alt="Before" className="rounded-lg w-full" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium mb-2">After Treatment:</p>
-                        <img src={afterTreeImage} alt="After" className="rounded-lg w-full" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Carousel>
-          </div>
-        </div>
-      </div>
+      
 
       {/* News/Updates Section */}
       <div className="py-16 bg-gray-50">

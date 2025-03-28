@@ -14,13 +14,14 @@ import PrivateRoute from "./components/PrivateRoute";
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './components/ErrorFallback';
 import CreateReport from "./pages/CreateReport";
+import UpdateReport from "./pages/UpdateReport";
 
 function Layout() {
   const location = useLocation();
   const isAdminRoute =
     location.pathname === "/dashboard" ||
-    location.pathname.startsWith("/update-client/");
-
+    location.pathname.startsWith("/update-client/") || location.pathname.startsWith("/updateReport/") || 
+    location.pathname.startsWith("/dashReport");
   return (
     <>
       {isAdminRoute ? <HeaderAdmin /> : <Header />}

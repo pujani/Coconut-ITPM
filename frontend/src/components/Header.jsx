@@ -34,7 +34,7 @@ export default function Header() {
     <Navbar 
       fluid 
       rounded 
-      className="bg-gradient-to-r from-green-50 to-teal-50 shadow-md"
+      className="bg-gradient-to-r from-green-200 to-teal-50 shadow-md"
     >
     <Navbar.Brand href="/" className="flex items-center">
         <img 
@@ -63,7 +63,7 @@ export default function Header() {
       {currentUser && (
         <div className="flex gap-2 md:order-2">
           {/* Display username */}
-          <span className="block text-sm text-white font-medium truncate mr-2 mt-2">
+          <span className="block text-sm text-yellow font-medium truncate mr-2 mt-2">
             {currentUser.userName}
           </span>
 
@@ -97,23 +97,23 @@ export default function Header() {
       {currentUser && (
         <Navbar.Collapse>
           <Navbar.Link active={path === "/"} as={"div"}>
-            <Link to="/" className="text-white hover:text-inherit active:text-inherit">
+            <Link to="/" className="text-green hover:text-inherit active:text-inherit">
               Home
             </Link>
           </Navbar.Link>
           <Navbar.Link as={"div"}>
-            <Link to="/" className="text-white hover:text-inherit active:text-inherit">
-              Packages
+            <Link to="/" className="text-green hover:text-inherit active:text-inherit">
+              CT Officer Visit
             </Link>
           </Navbar.Link>
           <Navbar.Link as={"div"}>
-            <Link to="/" className="text-white hover:text-inherit">
-              About
+            <Link to="/" className="text-green hover:text-inherit">
+              Disease Detection
             </Link>
           </Navbar.Link>
           <Navbar.Link as={"div"}>
-            <Link to="/" className="text-white hover:text-inherit">
-              Tenders
+            <Link to="/" className="text-green hover:text-inherit">
+              Live Risk
             </Link>
           </Navbar.Link>
         </Navbar.Collapse>

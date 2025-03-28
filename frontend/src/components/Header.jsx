@@ -1,7 +1,7 @@
 import { Avatar, Button, Dropdown, Navbar } from "flowbite-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AiOutlineSearch } from "react-icons/ai"; // Importing search icon
-import logo from "../image/logo.png"; // Importing logo image
+import logo from "../image/coconutlogo.png"; // Importing logo image
 import { useSelector, useDispatch } from "react-redux"; // Importing Redux hooks
 import { signoutSuccess } from "../redux/user/userSlice"; // Importing Redux action creator
 
@@ -31,11 +31,21 @@ export default function Header() {
   };
 
   return (
-    <Navbar className="border-b-2 bg-gray-900">
-      {/* Logo Link */}
-      <Link to="/" className="self-center whitespace-nowrap text-sm sm:text-xl font-semibold">
-        <img src={logo} alt="logo" className="h-14" />
-      </Link>
+    <Navbar 
+      fluid 
+      rounded 
+      className="bg-gradient-to-r from-green-50 to-teal-50 shadow-md"
+    >
+    <Navbar.Brand href="/" className="flex items-center">
+        <img 
+          src={logo} 
+          alt="Coconut GuardSL Logo" 
+          className="mr-3 h-12 sm:h-14" 
+        />
+        <span className="self-center whitespace-nowrap text-xl font-semibold text-green-800">
+          Coconut GuardSL
+        </span>
+      </Navbar.Brand>  
 
       {/* Search Form (commented out for now) */}
       {/* <form>

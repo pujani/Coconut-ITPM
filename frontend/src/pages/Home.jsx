@@ -32,6 +32,7 @@ console.log(GiIcons); // This will log all available icons in the console
 import { HiOutlineDocumentReport } from 'react-icons/hi';
 import { motion } from 'framer-motion';
 import { Link } from "react-router-dom";
+import logo from "../image/coconutlogo.png";
 
 // Placeholder images - replace with actual assets
 const heroBackgroundImage = "image/hero1.jpg";
@@ -343,11 +344,7 @@ export default function Home() {
             <p className="text-gray-600 mb-6 leading-relaxed">{t.aiScannerDesc}</p>
           </div>
           <div className="relative overflow-hidden h-56 w-full">
-            <img 
-              src="/api/placeholder/500/300" 
-              alt="AI Scanner Interface" 
-              className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
-            />
+           
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
               <span className="text-white font-medium p-6">Learn more about our scanner technology</span>
             </div>
@@ -398,11 +395,11 @@ export default function Home() {
             <p className="text-gray-600 mb-6 leading-relaxed">{t.riskMapDesc}</p>
           </div>
           <div className="relative h-56 w-full overflow-hidden">
-            <img 
-              src="/api/placeholder/500/300" 
-              alt="Risk Map" 
-              className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
-            />
+             <img 
+                        className="mx-auto h-24 w-auto" 
+                        src={logo} 
+                        alt="Coconut GuardSL Logo" 
+                      />
             <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <button className="px-6 py-3 bg-gray-900/80 text-white rounded-lg flex items-center transform transition-transform duration-300 hover:scale-105">
                 <HiOutlineDocumentReport className="mr-2" />

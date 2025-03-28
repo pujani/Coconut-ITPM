@@ -208,7 +208,7 @@ export default function DashAppointment() {
   const handleStatusUpdate = async (id, newStatus) => {
     try {
       const payload = { status: newStatus };
-      const response = await axios.put(`/api/appointment/${id}`, payload);
+      const response =  axios.put(`/api/appointment/${id}`, payload);
 
       // Update local state
       setAppointments(prev => prev.map(app =>
@@ -619,9 +619,11 @@ export default function DashAppointment() {
       ) : (
         <div>
           {viewType === "cards" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="flex flex-col gap-4">
               {currentItems.map((appointment) => (
+                 <div className="w-full">
                 <AppointmentCard key={appointment._id} appointment={appointment} />
+                 </div>
               ))}
             </div>
           ) : (

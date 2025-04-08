@@ -15,7 +15,7 @@ export default function Profile() {
     const fetchAppointments = async () => {
       try {
         const { data } = await axios.get(`/api/appointment?userId=${currentUser._id}`);
-        setAppointments(data.appointments); // Corrected line
+        setAppointments(data.appointments);
       } catch (error) {
         console.error(error);
       }
@@ -30,20 +30,125 @@ export default function Profile() {
   };
 
   const generatePDF = (appointment) => {
+    // Create a new PDF document
     const pdf = new jsPDF();
-
-    // PDF Content
+    
+    // Set document properties
+    pdf.setProperties({
+      title: 'Appointment Confirmation: CT Officer Visit',
+      subject: 'Coconut Plantation Inspection',
+      author: 'Coconut GuardSL',
+      creator: 'Coconut GuardSL System'
+    });
+    
+    // Define formatting variables
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    // Add header/logo placeholder
+    pdf.setFillColor(12, 74, 110); // Dark blue header
+    pdf.rect(0, 0, pageWidth, 30, 'F');
+    
+    // Title text
+    pdf.setTextColor(255, 255, 255); // White text
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('COCONUT GUARDSL', pageWidth / 2, 20, { align: 'center' });
+    
+    // Appointment confirmation heading
+    pdf.setTextColor(12, 74, 110); // Dark blue text
     pdf.setFontSize(18);
-    pdf.text('Appointment Confirmation', 20, 20);
-
-    // Add actual appointment details
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Appointment Confirmation: CT Officer Visit', margin, 45);
+    
+    // Add a line under the heading
+    pdf.setDrawColor(12, 74, 110);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, 48, pageWidth - margin, 48);
+    
+    // Reset text color to black for content
+    pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(12);
-    pdf.text(`Name: ${appointment.fullName}`, 20, 30);
-    pdf.text(`Scheduled Date: ${appointment.scheduledDate ? new Date(appointment.scheduledDate).toLocaleDateString() : 'Not Scheduled'}`, 20, 40);
-    pdf.text(`Scheduled Time: ${appointment.scheduledTime || 'Not Scheduled'}`, 20, 50);
-    pdf.text(`Officer Message: ${appointment.responseMessage || 'No Message'}`, 20, 60);
-
-    pdf.save(`appointment-confirmation-${appointment._id}.pdf`);
+    pdf.setFont('helvetica', 'normal');
+    
+    // Greeting
+    const greeting = `Dear ${appointment.fullName},`;
+    pdf.text(greeting, margin, 60);
+    
+    // Introduction text
+    const intro = 'This is to confirm your scheduled appointment with our CT Officer.';
+    pdf.text(intro, margin, 70);
+    
+    // Appointment details - section title
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Appointment Details', margin, 85);
+    pdf.setFont('helvetica', 'normal');
+    
+    // Format date if it exists
+    const formattedDate = appointment.scheduledDate 
+      ? new Date(appointment.scheduledDate).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      : 'To be confirmed';
+    
+    // Appointment details
+    pdf.text(`Date: ${formattedDate}`, margin + 10, 95);
+    pdf.text(`Time: ${appointment.scheduledTime || 'To be confirmed'}`, margin + 10, 105);
+    pdf.text('Purpose: CT Officer Inspection Visit', margin + 10, 115);
+    
+    // Main content paragraph with line wrapping
+    const paragraph = 'As arranged, our CT Officer will be visiting your coconut land to conduct a detailed inspection. Each coconut tree will be individually assessed to ensure optimal health and productivity.';
+    
+    const splitParagraph = pdf.splitTextToSize(paragraph, contentWidth);
+    pdf.text(splitParagraph, margin, 130);
+    
+    // Important note with emoji-like symbol
+    const yPosition = 130 + (splitParagraph.length * 5);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Please download and keep this document as proof of your scheduled visit.', margin, yPosition);
+    pdf.setFont('helvetica', 'normal');
+    
+    const note = 'It may be required for verification purposes during the inspection.';
+    pdf.text(note, margin, yPosition + 10);
+    
+    // Additional info about rescheduling
+    const additionalInfo = 'If you have any questions or need to reschedule, feel free to contact us in advance.';
+    pdf.text(additionalInfo, margin, yPosition + 25);
+    
+    // Thank you note
+    pdf.text('Thank you for your cooperation.', margin, yPosition + 40);
+    
+    // Closing and signature
+    pdf.text('Best regards,', margin, yPosition + 55);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Coconut GuardSL', margin, yPosition + 65);
+    
+    // Add plantation details in a box
+    pdf.setDrawColor(100, 100, 100);
+    pdf.setLineWidth(0.5);
+    pdf.rect(margin, yPosition + 75, contentWidth, 60);
+    
+    pdf.setFontSize(11);
+    pdf.text('Plantation Details:', margin + 5, yPosition + 85);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Land Extent: ${appointment.extent} ${appointment.extentUnit}`, margin + 10, yPosition + 95);
+    pdf.text(`Total Number of Plants: ${appointment.numberOfPlants}`, margin + 10, yPosition + 105);
+    pdf.text(`Affected Plants: ${appointment.numberOfPlantsAffected}`, margin + 10, yPosition + 115);
+    pdf.text(`Risk Assessment: ${appointment.riskAssessment || calculateRiskAssessment(appointment.percentageAffected)}`, margin + 10, yPosition + 125);
+    
+    // Add footer with page number and date
+    pdf.setFontSize(9);
+    pdf.setTextColor(100, 100, 100);
+    const today = new Date().toLocaleDateString();
+    pdf.text(`Generated on: ${today}`, margin, 285);
+    pdf.text(`Appointment ID: ${appointment._id}`, pageWidth - margin, 285, { align: 'right' });
+    
+    // Save the PDF
+    pdf.save(`CoconutGuardSL-Appointment-${appointment._id}.pdf`);
   };
 
   return (
@@ -145,11 +250,11 @@ export default function Profile() {
                     <span className="ml-2">{appointment.percentageAffected?.toFixed(2)}%</span>
                   </div>
                   <div className="flex items-center">
-                    <span className="font-medium">Risk Assesment:</span>
+                    <span className="font-medium">Risk Assessment:</span>
                     <p>
                       <span className={`px-2 py-1 ml-2 rounded ${appointment.riskAssessment === 'High' ? 'bg-red-200' :
                         appointment.riskAssessment === 'Medium' ? 'bg-yellow-200' : 'bg-green-200'}`}>
-                        {appointment.riskAssessment}
+                        {appointment.riskAssessment || calculateRiskAssessment(appointment.percentageAffected)}
                       </span>
                     </p>
                   </div>

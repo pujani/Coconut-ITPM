@@ -474,6 +474,7 @@ export default function Home() {
               </div>
               <div className="text-left">
                 <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{t.detected}</p>
+                <p>Hello !</p>
                 <div className="flex items-baseline">
                   <h3 className="text-4xl font-bold text-gray-900">320</h3>
                   <span className="ml-2 text-sm font-medium text-red-600 flex items-center">

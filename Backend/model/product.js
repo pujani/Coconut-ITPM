@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+//coco
 const productSchema = new mongoose.Schema({
     PName: {
         type: String,

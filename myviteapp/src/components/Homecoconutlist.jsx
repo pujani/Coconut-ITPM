@@ -6,7 +6,7 @@ import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
 
 const Homecoconutlist = () => {
     const [coconut,setcoconut] = useState([]);
-
+    //useEffect using
     useEffect(() => {
         axios.get("http://localhost:5001/api/coconut/getcoconut").then((res) =>{
             setcoconut(res.data);
